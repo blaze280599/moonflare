@@ -46,7 +46,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/collection/page.js` | `/collection`: album progress, the binder and Reset (`components/Collection.jsx`) |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
 | `components/GameProvider.jsx` | Context shared by every page: `useGame()`, `artReady`, the card dialog (`inspect`) and the binder's chosen album |
-| `components/SiteHeader.jsx` | Sticky nav bar: links, stars, daily button; a Sheet menu below `md` |
+| `components/SiteHeader.jsx` | Sticky nav bar: shadcn NavigationMenu with a Groups dropdown, stars + daily button (ButtonGroup); a Sheet menu below `md` |
 | `components/SiteFooter.jsx` | Disclaimer and footer links |
 | `components/Landing.jsx` | Landing page: hero HoloCard, how it works, groups, rarity tiers |
 | `components/GroupPage.jsx` | A group's album grid, pity/odds sidebar, and the opening stage; owns the Escape handling |
@@ -72,6 +72,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 
 - **Match the surrounding code:** 2-space indent, single quotes in app code (shadcn files use double quotes; leave them as generated), and comments only where the reason isn't obvious.
 - **Styling:** use Tailwind utilities and shadcn components. Use theme tokens (`bg-primary`, `text-muted-foreground`, `bg-rarity-epic`) and never hard-code colors in components. The only exceptions are the opening stage and card art, which are always dark.
+- **Use a shadcn component for every piece of app UI.** Don't hand-roll a bordered div, pill or link row when a component fits: `Card` for tiles, `Item` for list rows with media, `Badge` for chips and labels, `Skeleton` for loading placeholders, `Breadcrumb` at the top of inner pages, `Button` (including `variant="link"` / `"ghost"` with `asChild` around a Next `Link`) for links that should look like controls. Hand-written markup is only for card art, the binder's card sleeves and the opening stage's rip-and-flip visuals.
 - **Tailwind class names must appear whole in the source.** Don't build them from strings (`'bg-rarity-' + r`). Add them to a map like `lib/rarity-styles.js` instead.
 - **New shadcn components:** `npx shadcn@latest add <name>`. Check `components.json` and don't change the preset or the `cn` import.
 - **Copy:** plain, specific UI text from the player's side ("Open · 100 ★", "Erase collection"). K-pop terms like PC, POB, bias and lucky draw are fine; that's the audience's language.
@@ -97,7 +98,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are stored in players' localStorage, so never rename an era or member code. Add new ones instead.
 - **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. Re-run `npm run photos:lesserafim`; `tests/cards.test.js` only checks that URLs exist, not that they load.
 - **One provider, many pages.** Game state lives in `GameProvider` (mounted in `app/layout.js`), so it survives client-side navigation. Read it with `useGameContext()`; never call `useGame()` in a page, or that page gets its own copy of the save and the two drift apart. The card dialog is rendered by the provider, so any page can open it with `inspect(card)`.
-- **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. With more than about three groups, swap the per-group nav links in `SiteHeader.jsx` for a dropdown.
+- **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. The nav lists groups in the NavigationMenu's Groups dropdown and under a Groups heading in the phone Sheet.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change

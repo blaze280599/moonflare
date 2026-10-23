@@ -87,7 +87,7 @@ Then open http://localhost:3000.
 - `components/HoloCard/` holds the React Bits HoloCard (JS-CSS variant). It has four small changes, each marked with a comment:
   a controlled `flipped` prop, an `onClick` prop, starting face-down without a flip animation, and releasing the WebGL context on unmount.
 - Pages: `/` is the landing page (`components/Landing.jsx`), `/groups/<slug>` is one group's albums (`components/GroupPage.jsx`), and `/collection` is the binder (`components/Collection.jsx`).
-- `components/SiteHeader.jsx` is the nav bar shown on every page, with stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
+- `components/SiteHeader.jsx` is the nav bar shown on every page: a shadcn Navigation Menu with a Groups dropdown, plus stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
 - `components/OpeningStage.jsx` handles ripping the shrink-wrap and flipping the five cards.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `lib/cards.js` is the card catalog (groups, eras, cards) and the foil each rarity gets.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Package } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,9 +11,19 @@ import { useGameContext } from '@/components/GameProvider';
 import { CARDS, ERAS, GROUP_BY_SLUG } from '@/lib/cards';
 import { getCover } from '@/lib/art';
 import { PACK_COST } from '@/lib/gacha';
+import { Badge } from '@/components/ui/badge';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // One group's albums, newest first, and the opening stage for them.
 export default function GroupPage({ slug }) {
@@ -61,15 +72,29 @@ export default function GroupPage({ slug }) {
 
       <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-14">
         <header className="space-y-4 border-b pb-8">
-          <p className="font-mono text-xs tracking-wider text-primary uppercase">Albums</p>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{group.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">{group.name}</h1>
           <p className="max-w-xl text-muted-foreground">{group.blurb}</p>
           <ul className="flex flex-wrap gap-2" aria-label="Members">
             {group.members.map(m => (
-              <li key={m.code} className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs">
-                {/* Member colors are data, so they're set inline rather than as theme tokens. */}
-                <span className="size-2 rounded-full" style={{ background: m.color }} />
-                {m.name}
+              <li key={m.code}>
+                <Badge variant="outline" className="h-6 gap-1.5 px-2.5">
+                  {/* Member colors are data, so they're set inline rather than as theme tokens. */}
+                  <span className="size-2 rounded-full" style={{ background: m.color }} />
+                  {m.name}
+                </Badge>
               </li>
             ))}
           </ul>
@@ -94,7 +119,7 @@ export default function GroupPage({ slug }) {
                     {artReady ? (
                       <img alt={`${era.name} album cover`} src={getCover(era)} className="aspect-square w-full rounded-lg object-cover shadow-lg shadow-black/40" />
                     ) : (
-                      <div className="aspect-square w-full rounded-lg bg-muted" />
+                      <Skeleton className="aspect-square w-full rounded-lg" />
                     )}
                   </div>
                   <CardContent className="flex flex-1 flex-col gap-1 p-3 sm:p-4">

@@ -121,9 +121,13 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
                     <span className="flex items-center gap-1.5">
                       <Badge className={cn('font-mono text-[9px] tracking-wider uppercase', RARITY_BADGE[card.rarity])}>{card.label}</Badge>
                       {isNew ? (
-                        <span className="font-mono text-[10px] text-star">NEW</span>
+                        <Badge variant="outline" className="border-star/50 font-mono text-[9px] text-star">
+                          NEW
+                        </Badge>
                       ) : (
-                        <span className="font-mono text-[10px] text-white/55">+{refund} ★</span>
+                        <Badge variant="outline" className="border-white/20 font-mono text-[9px] text-white/60">
+                          +{refund} ★
+                        </Badge>
                       )}
                     </span>
                   </div>

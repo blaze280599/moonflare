@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -8,8 +9,18 @@ import { useGameContext } from '@/components/GameProvider';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getCover } from '@/lib/art';
 import { NEW_GAME } from '@/lib/gacha';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { Item, ItemContent, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,17 +47,27 @@ export default function Collection() {
     <>
       <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <header className="space-y-4 border-b pb-8">
-          <p className="font-mono text-xs tracking-wider text-primary uppercase">Collection</p>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Collection</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Your collection</h1>
-          <p className="text-muted-foreground">
-            {loaded ? (
-              <>
-                {total} of {CARDS.length} photocards collected · {state.packs} album{state.packs === 1 ? '' : 's'} opened
-              </>
-            ) : (
-              'Loading your collection…'
-            )}
-          </p>
+          {loaded ? (
+            <p className="text-muted-foreground">
+              {total} of {CARDS.length} photocards collected · {state.packs} album{state.packs === 1 ? '' : 's'} opened
+            </p>
+          ) : (
+            <Skeleton className="h-6 w-72 max-w-full" />
+          )}
         </header>
 
         <div className="space-y-8 pt-8">
@@ -59,30 +80,28 @@ export default function Collection() {
                   const owned = cards.filter(c => state.owned[c.id]).length;
                   const active = binderEra.code === era.code;
                   return (
-                    <button
+                    <Item
                       key={era.code}
-                      onClick={() => pickEra(era)}
-                      aria-pressed={active}
-                      className={cn(
-                        'flex items-center gap-3 rounded-xl border bg-card p-2 text-left transition hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                        active && 'border-primary/60 ring-1 ring-primary/40'
-                      )}
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className={cn('flex-nowrap bg-card p-2 text-left hover:border-primary/40', active && 'border-primary/60 ring-1 ring-primary/40')}
                     >
-                      {artReady ? (
-                        <img alt="" src={getCover(era)} className="size-11 shrink-0 rounded-md object-cover" />
-                      ) : (
-                        <div className="size-11 shrink-0 rounded-md bg-muted" />
-                      )}
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div className="truncate text-sm font-medium">{era.name}</div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
-                          <span className="text-[11px] text-muted-foreground tabular-nums">
-                            {owned}/{cards.length}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
+                      <button onClick={() => pickEra(era)} aria-pressed={active}>
+                        <ItemMedia variant="image" className="size-11 rounded-md">
+                          {artReady ? <img alt="" src={getCover(era)} /> : <Skeleton className="size-full" />}
+                        </ItemMedia>
+                        <ItemContent className="min-w-0 gap-1.5">
+                          <ItemTitle className="truncate">{era.name}</ItemTitle>
+                          <div className="flex items-center gap-2">
+                            <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
+                            <span className="text-[11px] text-muted-foreground tabular-nums">
+                              {owned}/{cards.length}
+                            </span>
+                          </div>
+                        </ItemContent>
+                      </button>
+                    </Item>
                   );
                 })}
               </div>

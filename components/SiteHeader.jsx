@@ -5,26 +5,33 @@ import { usePathname } from 'next/navigation';
 import { Check, Gift, Menu, MoonStar, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { GROUPS } from '@/lib/cards';
+import { CARDS, ERAS, GROUPS } from '@/lib/cards';
+import { getCover } from '@/lib/art';
 import { DAILY_STARS, PACK_COST } from '@/lib/gacha';
 import { useGameContext } from '@/components/GameProvider';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle
+} from '@/components/ui/navigation-menu';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-
-// One link per group for now. Switch to a "Groups" dropdown once there are more than three or so.
-const NAV = [
-  { href: '/', label: 'Home' },
-  ...GROUPS.map(g => ({ href: `/groups/${g.slug}`, label: g.name })),
-  { href: '/collection', label: 'Collection' }
-];
 
 const isActive = (pathname, href) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
+const groupHref = g => `/groups/${g.slug}`;
+
 export default function SiteHeader() {
   const pathname = usePathname();
-  const { state, loaded, claimDaily, dailyClaimed } = useGameContext();
+  const { state, loaded, artReady, claimDaily, dailyClaimed } = useGameContext();
 
   const onDaily = () => {
     if (claimDaily()) toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
@@ -38,42 +45,55 @@ export default function SiteHeader() {
           <span className="font-heading text-lg font-semibold tracking-tight">Moonflare</span>
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {NAV.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                isActive(pathname, item.href) && 'bg-muted text-foreground'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <NavigationMenu aria-label="Main" className="max-md:hidden">
+          <NavigationMenuList className="gap-1">
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild active={isActive(pathname, '/')} className={navigationMenuTriggerStyle()}>
+                <Link href="/">Home</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger className={cn(isActive(pathname, '/groups') && 'bg-muted/50')}>Groups</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-[420px] gap-1 p-1">
+                  {GROUPS.map(g => (
+                    <li key={g.code}>
+                      <GroupLink group={g} active={isActive(pathname, groupHref(g))} owned={state.owned} loaded={loaded} artReady={artReady} />
+                    </li>
+                  ))}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild active={isActive(pathname, '/collection')} className={navigationMenuTriggerStyle()}>
+                <Link href="/collection">Collection</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
 
         <div className="ml-auto flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-bold tabular-nums">
-                <Star className="size-4 fill-star text-star" />
-                {loaded ? state.coins.toLocaleString() : '—'}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>Stars buy albums. Duplicate cards give stars back.</TooltipContent>
-          </Tooltip>
-          <Button
-            size="lg"
-            className="px-3"
-            disabled={!loaded || dailyClaimed}
-            onClick={onDaily}
-            aria-label={dailyClaimed ? 'Daily stars claimed today' : `Claim ${DAILY_STARS} daily stars`}
-          >
-            {dailyClaimed ? <Check /> : <Gift />}
-            <span className="max-sm:hidden">{dailyClaimed ? 'Claimed today' : `Daily ${DAILY_STARS}`}</span>
-          </Button>
+          <ButtonGroup>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ButtonGroupText className="bg-card font-bold tabular-nums" tabIndex={0} aria-label={loaded ? `${state.coins} stars` : 'Stars'}>
+                  <Star className="fill-star text-star" />
+                  {loaded ? state.coins.toLocaleString() : '—'}
+                </ButtonGroupText>
+              </TooltipTrigger>
+              <TooltipContent>Stars buy albums. Duplicate cards give stars back.</TooltipContent>
+            </Tooltip>
+            <Button
+              size="lg"
+              className="px-3"
+              disabled={!loaded || dailyClaimed}
+              onClick={onDaily}
+              aria-label={dailyClaimed ? 'Daily stars claimed today' : `Claim ${DAILY_STARS} daily stars`}
+            >
+              {dailyClaimed ? <Check /> : <Gift />}
+              <span className="max-sm:hidden">{dailyClaimed ? 'Claimed today' : `Daily ${DAILY_STARS}`}</span>
+            </Button>
+          </ButtonGroup>
 
           <Sheet>
             <SheetTrigger asChild>
@@ -89,23 +109,21 @@ export default function SiteHeader() {
                 </SheetTitle>
               </SheetHeader>
               <nav aria-label="Main" className="grid gap-1 px-2">
-                {NAV.map(item => (
-                  <SheetClose asChild key={item.href}>
-                    <Link
-                      href={item.href}
-                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                      className={cn(
-                        'rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                        isActive(pathname, item.href) && 'bg-muted text-foreground'
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  </SheetClose>
+                <MobileLink href="/" pathname={pathname}>
+                  Home
+                </MobileLink>
+                <p className="px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">Groups</p>
+                {GROUPS.map(g => (
+                  <MobileLink key={g.code} href={groupHref(g)} pathname={pathname}>
+                    {g.name}
+                  </MobileLink>
                 ))}
+                <Separator className="my-2" />
+                <MobileLink href="/collection" pathname={pathname}>
+                  Collection
+                </MobileLink>
               </nav>
-              <Separator className="mx-4 w-auto" />
-              <p className="px-4 text-xs text-muted-foreground">
+              <p className="mt-auto px-4 pb-4 text-xs text-muted-foreground">
                 {DAILY_STARS} free stars every day. Albums cost {PACK_COST} ★.
               </p>
             </SheetContent>
@@ -113,5 +131,43 @@ export default function SiteHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+// A group in the Groups dropdown: latest album cover, blurb and the player's progress.
+function GroupLink({ group, active, owned, loaded, artReady }) {
+  const eras = ERAS.filter(e => e.group === group);
+  const cards = CARDS.filter(c => c.era.group === group);
+  const have = cards.filter(c => owned[c.id]).length;
+  return (
+    <NavigationMenuLink asChild active={active} className="items-start gap-3">
+      <Link href={groupHref(group)}>
+        {artReady ? (
+          <img alt="" src={getCover(eras[eras.length - 1])} className="size-14 shrink-0 rounded-md object-cover" />
+        ) : (
+          <Skeleton className="size-14 shrink-0" />
+        )}
+        <div className="min-w-0 space-y-1">
+          <div className="font-medium">{group.name}</div>
+          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{group.blurb}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {eras.length} albums · {loaded ? `${have} / ${cards.length}` : '—'} collected
+          </p>
+        </div>
+      </Link>
+    </NavigationMenuLink>
+  );
+}
+
+function MobileLink({ href, pathname, children }) {
+  const active = isActive(pathname, href);
+  return (
+    <SheetClose asChild>
+      <Button asChild variant="ghost" size="lg" className={cn('justify-start text-muted-foreground', active && 'bg-muted text-foreground')}>
+        <Link href={href} aria-current={active ? 'page' : undefined}>
+          {children}
+        </Link>
+      </Button>
+    </SheetClose>
   );
 }

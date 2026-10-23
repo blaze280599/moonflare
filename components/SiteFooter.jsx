@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MoonStar } from 'lucide-react';
 import { GROUPS } from '@/lib/cards';
+import { Button } from '@/components/ui/button';
 
 export default function SiteFooter() {
   return (
@@ -16,15 +17,12 @@ export default function SiteFooter() {
             with Source Music or HYBE. Your collection saves in this browser only.
           </p>
         </div>
-        <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col">
-          {GROUPS.map(g => (
-            <Link key={g.code} href={`/groups/${g.slug}`} className="hover:text-foreground">
-              {g.name}
-            </Link>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-start">
+          {[...GROUPS.map(g => [`/groups/${g.slug}`, g.name]), ['/collection', 'Collection']].map(([href, label]) => (
+            <Button key={href} asChild variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+              <Link href={href}>{label}</Link>
+            </Button>
           ))}
-          <Link href="/collection" className="hover:text-foreground">
-            Collection
-          </Link>
         </nav>
       </div>
     </footer>

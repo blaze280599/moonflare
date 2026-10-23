@@ -12,8 +12,9 @@ import { DAILY_STARS, PACK_COST, PITY_AT, RATES } from '@/lib/gacha';
 import { RARITY_DOT } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const HERO_CARD = CARD_BY_ID['HT-CW-lucky'];
 const FEATURED = GROUP_BY_SLUG['le-sserafim'];
@@ -97,7 +98,7 @@ export default function Landing() {
                 {...foilFor(HERO_CARD)}
               />
             ) : (
-              <div className="aspect-[63/88] w-[clamp(220px,28vw,320px)] animate-pulse rounded-[14px] bg-muted" />
+              <Skeleton className="aspect-[63/88] w-[clamp(220px,28vw,320px)] rounded-[14px]" />
             )}
             <p className="flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
               <Hand className="size-3.5" />
@@ -110,17 +111,21 @@ export default function Landing() {
       <section className="border-t bg-card/30">
         <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
           <SectionHeading eyebrow="How it works" title="Three steps, every day" />
-          <ol className="mt-10 grid gap-8 sm:grid-cols-3">
+          <ol className="mt-10 grid gap-4 sm:grid-cols-3">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-lg border bg-background">
-                    <step.icon className="size-4.5 text-primary" />
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                </div>
-                <h3 className="font-heading text-lg font-semibold">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+              <li key={step.title}>
+                <Card className="h-full">
+                  <CardHeader className="gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="grid size-10 place-items-center rounded-lg border bg-background">
+                        <step.icon className="size-4.5 text-primary" />
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+                    </div>
+                    <CardTitle className="font-heading text-lg">{step.title}</CardTitle>
+                    <CardDescription className="leading-relaxed">{step.body}</CardDescription>
+                  </CardHeader>
+                </Card>
               </li>
             ))}
           </ol>
@@ -151,7 +156,7 @@ export default function Landing() {
                           className="size-full rounded-lg object-cover shadow-lg shadow-black/40 transition duration-300 group-hover:-rotate-2 group-hover:scale-[1.03]"
                         />
                       ) : (
-                        <div className="size-full rounded-lg bg-muted" />
+                        <Skeleton className="size-full rounded-lg" />
                       )}
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -188,14 +193,14 @@ export default function Landing() {
           />
           <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {RATES.map(r => (
-              <div key={r.rarity} className="space-y-3 rounded-xl border bg-background p-4">
-                <span className={cn('block h-1 w-8 rounded-full', RARITY_DOT[r.rarity])} />
-                <div>
-                  <div className="text-sm font-medium capitalize">{r.rarity}</div>
-                  <div className="text-xs text-muted-foreground">{CARD_KIND[r.rarity]}</div>
-                </div>
-                <div className="font-heading text-2xl font-semibold tabular-nums">{r.pct}%</div>
-              </div>
+              <Card key={r.rarity} size="sm">
+                <CardHeader>
+                  <span className={cn('mb-2 block h-1 w-8 rounded-full', RARITY_DOT[r.rarity])} />
+                  <CardTitle className="capitalize">{r.rarity}</CardTitle>
+                  <CardDescription className="text-xs">{CARD_KIND[r.rarity]}</CardDescription>
+                </CardHeader>
+                <CardContent className="font-heading text-2xl font-semibold tabular-nums">{r.pct}%</CardContent>
+              </Card>
             ))}
           </div>
         </div>
