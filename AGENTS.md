@@ -9,7 +9,6 @@ Read `README.md` first. Its **Direction** section is the product spec: the core 
 ## Ground rules
 
 1. **Verify everything you change.** Run the build, open the app in a browser, and click through what you touched (see [Verifying a change](#verifying-a-change)). "It should work" is not done.
-2. **Never put real people on cards.** All idols, groups, agencies and stores are fictional. Don't use real K-pop idols' names, photos, likenesses, logos or song titles, and don't add tools that fetch them. The "try your own photo" preview stays local to the user's device and is never uploaded or saved.
 3. **Keep the game fair and honest.** Pull rates shown in the UI must match the code in `lib/gacha.js`. The odds table in `components/Game.jsx` is built from `RATES`, so don't hard-code numbers there. If you change rates, pity or refunds, update the README and `tests/gacha.test.js` in the same commit.
 4. **Stay inside the spec.** Build features from the README's Direction section. If you add or drop a planned feature, update the README so the next agent sees the current plan. When the README and the code disagree, fix whichever is wrong in the same change.
 5. **Small, focused commits.** One logical change per commit, with a message that says what changed and why. Never commit a broken build.
@@ -104,7 +103,7 @@ If you can't verify something (no browser available, say), state that in the com
 
 - Work on `main` unless told otherwise. Make one commit per logical change, and only commit when the build passes.
 - Commit message: a short imperative summary line, then a body explaining why, for anything non-trivial.
-- Never commit `node_modules/`, `.next/`, `.env*` files or secrets. Never commit real people's photos.
+- Never commit `node_modules/`, `.next/`, `.env*` files or secrets.
 - Don't rewrite published history or force-push.
 
 ## Roadmap pointers
@@ -113,5 +112,5 @@ The README's Direction section lists planned features. Notes for the likely next
 
 - **Real accounts and trading** → Supabase (auth, inventories, trades), deployed on Vercel. Swap `lib/useGame.js` for a server-backed hook with the same return shape, so components don't change. Rolls must happen server-side once inventories are shared, or players can cheat.
 - **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
-- **Real card art** → return image URLs from `getArt()` in `lib/art.js`. Art must be original or properly licensed, never photos of real idols.
+- **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
 - **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`.
