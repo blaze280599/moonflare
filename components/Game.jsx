@@ -10,7 +10,7 @@ import InspectModal from '@/components/InspectModal';
 import Binder from '@/components/Binder';
 import { CARD_BY_ID, ERAS, foilFor } from '@/lib/cards';
 import { getArt, getBack, getCover, loadArtFonts } from '@/lib/art';
-import { DAILY_STARS, PACK_COST, PITY_AT } from '@/lib/gacha';
+import { DAILY_STARS, NEW_GAME, PACK_COST, PITY_AT, RATES } from '@/lib/gacha';
 import { useGame } from '@/lib/useGame';
 import { RARITY_DOT } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
@@ -35,13 +35,10 @@ import {
 
 const HERO_CARD = CARD_BY_ID['NB-HN-lucky'];
 
-const PULL_RATES = [
-  { rarity: 'common', card: 'Album PC', rate: '62%' },
-  { rarity: 'rare', card: 'Selfie PC', rate: '25%' },
-  { rarity: 'epic', card: 'POB', rate: '9%' },
-  { rarity: 'legendary', card: 'Lucky draw', rate: '3.6%' },
-  { rarity: 'mythic', card: 'Group special', rate: '0.4%' }
-];
+const CARD_KIND = { common: 'Album PC', rare: 'Selfie PC', epic: 'POB', legendary: 'Lucky draw', mythic: 'Group special' };
+
+// Built from RATES in lib/gacha.js so the table can't drift from the real odds.
+const PULL_RATES = RATES.map(r => ({ rarity: r.rarity, card: CARD_KIND[r.rarity], rate: `${r.pct}%` }));
 
 export default function Game() {
   const { state, loaded, openPack, claimDaily, reset, dailyClaimed } = useGame();
@@ -254,7 +251,7 @@ export default function Game() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Erase your whole collection?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Every card, your stars and your pity progress are deleted from this browser. You start again with 500 stars.
+                  Every card, your stars and your pity progress are deleted from this browser. You start again with {NEW_GAME.coins} stars.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -263,7 +260,7 @@ export default function Game() {
                   variant="destructive"
                   onClick={() => {
                     reset();
-                    toast('Collection reset', { description: 'You have 500 stars.' });
+                    toast('Collection reset', { description: `You have ${NEW_GAME.coins} stars.` });
                   }}
                 >
                   Erase collection

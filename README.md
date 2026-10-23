@@ -53,7 +53,7 @@ Using real idols' photos and names gets into copyright (the photos belong to the
 - [x] One fictional group of 5 members, about 40 cards (42, across 5 rarities)
 - [x] Album opening animation with a 5-card reveal
 - [x] Binder collection view with completion %
-- [ ] Daily free pack, saved in localStorage (the build gives 300 daily stars instead, enough for 3 albums)
+- [ ] Daily free pack, saved in localStorage (the build gives 300 daily stars instead, enough for 3 albums, resetting at the player's local midnight)
 
 ## Run it
 
@@ -81,7 +81,8 @@ Then open http://localhost:3000.
 - `components/OpeningStage.jsx` handles ripping the shrink-wrap and flipping the five cards.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `lib/cards.js` is the card catalog and the foil each rarity gets.
-- `lib/gacha.js` holds pull rates, pity and duplicate refunds.
+- `lib/gacha.js` holds pull rates, pity and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns about half its cost.
+- `tests/gacha.test.js` covers the odds, pity and economy. Run it with `npm test`.
 - `lib/art.js` draws the placeholder card art on canvas. Replace `getArt()` to use real artwork.
 - `lib/useGame.js` saves progress to localStorage.
 

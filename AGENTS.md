@@ -10,7 +10,7 @@ Read `README.md` first. Its **Direction** section is the product spec: the core 
 
 1. **Verify everything you change.** Run the build, open the app in a browser, and click through what you touched (see [Verifying a change](#verifying-a-change)). "It should work" is not done.
 2. **Never put real people on cards.** All idols, groups, agencies and stores are fictional. Don't use real K-pop idols' names, photos, likenesses, logos or song titles, and don't add tools that fetch them. The "try your own photo" preview stays local to the user's device and is never uploaded or saved.
-3. **Keep the game fair and honest.** Pull rates shown in the UI must match the code in `lib/gacha.js`. If you change rates, pity or refunds, update the table in `components/Game.jsx` and the README in the same commit.
+3. **Keep the game fair and honest.** Pull rates shown in the UI must match the code in `lib/gacha.js`. The odds table in `components/Game.jsx` is built from `RATES`, so don't hard-code numbers there. If you change rates, pity or refunds, update the README and `tests/gacha.test.js` in the same commit.
 4. **Stay inside the spec.** Build features from the README's Direction section. If you add or drop a planned feature, update the README so the next agent sees the current plan. When the README and the code disagree, fix whichever is wrong in the same change.
 5. **Small, focused commits.** One logical change per commit, with a message that says what changed and why. Never commit a broken build.
 6. **Leave a trail.** Future agents only know what's in the repo. Record decisions, gotchas and anything non-obvious in this file, the README or code comments, not just in your session.
@@ -22,9 +22,10 @@ npm install        # install dependencies
 npm run dev        # dev server on http://localhost:3000
 npm run build      # production build; must pass before every commit
 npm start          # serve the production build
+npm test           # unit tests (Node's built-in runner, tests/*.test.js)
 ```
 
-There is no test suite or linter script yet. `npm run build` type-checks and lints, so treat a clean build as the minimum bar. Add tests when you add logic that can break silently, starting with `lib/gacha.js`.
+There is no linter script. `npm run build` type-checks and lints, and `npm test` covers `lib/gacha.js` (rates, pity, refunds, and an economy check that an all-duplicate album refunds well under its cost). Both must pass before every commit. Add tests when you add logic that can break silently. Tests use `node:test` with no extra dependencies, so `package.json` has `"type": "module"`, and any `lib/` file a test imports must use explicit `.js` extensions in its relative imports (Node won't resolve `./cards`).
 
 On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't found, add that folder to `PATH` for the shell.
 
@@ -50,6 +51,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/cards.js` | Card catalog (members, eras, variants), rarity table, `foilFor()` |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
 | `lib/useGame.js` | Game state hook and localStorage save |
+| `tests/` | Unit tests for game logic (`npm test`) |
 | `lib/art.js` | Placeholder card art drawn on canvas; also album covers, card backs, photo cropping |
 | `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
 | `lib/rarity-styles.js` | Tailwind class maps per rarity |
@@ -85,7 +87,7 @@ These have all bitten us before. Read them before touching the related code.
 
 Do all of these before committing. Nobody else will.
 
-1. `npm run build` passes with no errors.
+1. `npm run build` and `npm test` pass with no errors.
 2. Start the dev server and open http://localhost:3000. Check the browser console for errors.
 3. Click through the flows your change touches. For anything game-related, do a full loop:
    - Open an album, tap the cover 3 times, and confirm the cards deal face-down with no front showing.
