@@ -28,6 +28,7 @@ export default function InspectModal({ card, owned, onClose, onError }) {
 
   const onPhoto = async e => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // so picking the same file again still fires onChange
     if (!file) return;
     try {
       setPhoto(await photoToCard(file));

@@ -110,8 +110,7 @@ export default function Game() {
               className="px-3"
               disabled={!loaded || dailyClaimed}
               onClick={() => {
-                claimDaily();
-                toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
+                if (claimDaily()) toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
               }}
             >
               <Gift />
