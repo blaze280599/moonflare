@@ -56,10 +56,10 @@ export default function InspectModal({ card, owned, onClose, onError }) {
           <div className="space-y-5">
             <DialogHeader className="gap-2 text-left">
               <span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                {card.num} · {card.era.name}
+                {card.num} · {card.era.group.name} {card.era.name}
               </span>
               <DialogTitle className="font-heading text-4xl leading-none font-semibold tracking-tight">
-                {card.member ? card.member.name : 'MOONFLARE'}
+                {card.member ? card.member.name : card.era.group.name}
                 {card.member && <span className="ml-2 align-middle font-sans text-lg font-medium text-muted-foreground">{card.member.kr}</span>}
               </DialogTitle>
               <DialogDescription>

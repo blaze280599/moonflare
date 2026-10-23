@@ -33,6 +33,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **Next.js 15 (App Router), React 19, plain JavaScript** (`.js`/`.jsx`, no TypeScript). Keep it JavaScript unless the README says otherwise.
 - **Tailwind CSS v4** and **shadcn/ui** (Radix, "nova" preset) for all app chrome. Icons come from `lucide-react`. Toasts use `sonner`.
 - **HoloCard** (React Bits, WebGL2) for every card that shows foil.
+- **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
 - **Persistence:** `localStorage` only, through `lib/useGame.js`. Accounts and trading (Supabase) are planned but not built.
 
 ## Project map
@@ -47,11 +48,13 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/Binder.jsx` | Collection grid with era tabs |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
 | `components/ui/` | shadcn components. Add new ones with the CLI rather than hand-writing them |
-| `lib/cards.js` | Card catalog (members, eras, variants), rarity table, `foilFor()` |
+| `lib/cards.js` | Card catalog (groups, members, eras, variants), rarity table, `foilFor()` |
+| `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
+| `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
 | `lib/useGame.js` | Game state hook and localStorage save |
 | `tests/` | Unit tests for game logic (`npm test`) |
-| `lib/art.js` | Placeholder card art drawn on canvas; also album covers, card backs, photo cropping |
+| `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, photo cropping |
 | `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
 | `lib/rarity-styles.js` | Tailwind class maps per rarity |
 | `prototype/` | The original single-file HTML prototype. Reference only; don't develop it further |
@@ -80,6 +83,9 @@ These have all bitten us before. Read them before touching the related code.
 - **Tailwind source scanning:** `globals.css` uses `@import "tailwindcss" source("..")`. Without it, Tailwind scans the dev server's working folder, which may not be the project, and most utilities disappear.
 - **Stale CSS after config changes:** if styles look wrong after changing PostCSS or Tailwind config, stop the dev server, delete `.next/` and restart.
 - **Stacking order:** the opening stage is `z-40`, and shadcn dialogs and their overlays are `z-50`, so the card dialog opens on top of the stage. Keep it that way.
+- **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-lesserafim.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
+- **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are stored in players' localStorage, so never rename an era or member code. Add new ones instead.
+- **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. Re-run `npm run photos:lesserafim`; `tests/cards.test.js` only checks that URLs exist, not that they load.
 - **Escape key:** `Game.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change

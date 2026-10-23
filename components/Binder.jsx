@@ -2,13 +2,13 @@
 
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CARDS, ERAS } from '@/lib/cards';
+import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getArt } from '@/lib/art';
 import { RARITY_BADGE, RARITY_RING } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Static thumbnails only: every live HoloCard holds a WebGL context, and browsers cap them at ~16.
 export default function Binder({ era, onEraChange, owned, artReady, onInspect }) {
@@ -21,19 +21,27 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
         <CardHeader className="border-b max-sm:flex max-sm:flex-col">
           <CardTitle className="font-heading text-2xl font-semibold tracking-tight">Your binder</CardTitle>
           <CardDescription>
-            {count} of {cards.length} {era.name} cards collected
+            {count} of {cards.length} {era.group.name} {era.name} cards collected
           </CardDescription>
           <Progress value={(count / cards.length) * 100} className="mt-1.5 h-1.5 max-w-xs max-sm:max-w-none" />
           <CardAction className="max-sm:mt-2">
-            <Tabs value={era.code} onValueChange={code => onEraChange(ERAS.find(e => e.code === code))}>
-              <TabsList>
-                {ERAS.map(e => (
-                  <TabsTrigger key={e.code} value={e.code}>
-                    {e.name}
-                  </TabsTrigger>
+            <Select value={era.code} onValueChange={code => onEraChange(ERAS.find(e => e.code === code))}>
+              <SelectTrigger aria-label="Binder album" className="w-56 max-sm:w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GROUPS.map(g => (
+                  <SelectGroup key={g.code}>
+                    <SelectLabel>{g.name}</SelectLabel>
+                    {ERAS.filter(e => e.group === g).map(e => (
+                      <SelectItem key={e.code} value={e.code}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
-              </TabsList>
-            </Tabs>
+              </SelectContent>
+            </Select>
           </CardAction>
         </CardHeader>
         <CardContent>

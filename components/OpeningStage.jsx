@@ -59,7 +59,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
     <div className="stage" role="dialog" aria-modal="true" aria-label="Album opening">
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate font-mono text-xs tracking-wider text-white/55 uppercase">
-          MOONFLARE · {era.name}
+          {era.group.name} · {era.name}
           <span className="max-sm:hidden"> · {era.sub}</span>
         </span>
         <Button variant="ghost" size="icon-lg" onClick={onClose} aria-label="Close" className="text-white hover:bg-white/10">
@@ -102,7 +102,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
                     backImage={getBack(era)}
                     flipped={!revealed[i]}
                     onClick={() => (revealed[i] ? onInspect(card) : reveal(i))}
-                    alt={revealed[i] ? `${card.member?.name ?? 'MOONFLARE'} ${card.label}` : `Face-down photocard ${i + 1}`}
+                    alt={revealed[i] ? `${card.member?.name ?? era.group.name} ${card.label}` : `Face-down photocard ${i + 1}`}
                     radius={10}
                     tiltMax={16}
                     style={{ '--hc-w': 'clamp(104px, 16vw, 188px)' }}
@@ -115,7 +115,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
                           {card.member.name} <span className="font-medium text-white/55">{card.member.kr}</span>
                         </>
                       ) : (
-                        'MOONFLARE'
+                        era.group.name
                       )}
                     </span>
                     <span className="flex items-center gap-1.5">

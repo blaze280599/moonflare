@@ -8,7 +8,7 @@ import HoloCard from '@/components/HoloCard/HoloCard';
 import OpeningStage from '@/components/OpeningStage';
 import InspectModal from '@/components/InspectModal';
 import Binder from '@/components/Binder';
-import { CARD_BY_ID, ERAS, foilFor } from '@/lib/cards';
+import { CARD_BY_ID, ERAS, GROUPS, foilFor } from '@/lib/cards';
 import { getArt, getBack, getCover, loadArtFonts } from '@/lib/art';
 import { DAILY_STARS, NEW_GAME, PACK_COST, PITY_AT, RATES } from '@/lib/gacha';
 import { useGame } from '@/lib/useGame';
@@ -20,6 +20,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   AlertDialog,
@@ -33,7 +34,7 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 
-const HERO_CARD = CARD_BY_ID['NB-HN-lucky'];
+const HERO_CARD = CARD_BY_ID['HT-CW-lucky'];
 
 const CARD_KIND = { common: 'Album PC', rare: 'Selfie PC', epic: 'POB', legendary: 'Lucky draw', mythic: 'Group special' };
 
@@ -45,7 +46,8 @@ export default function Game() {
   const [artReady, setArtReady] = useState(false);
   const [pack, setPack] = useState(null); // { id, era, pulls }
   const [inspecting, setInspecting] = useState(null);
-  const [binderEra, setBinderEra] = useState(ERAS[0]);
+  const [albumGroup, setAlbumGroup] = useState('LS');
+  const [binderEra, setBinderEra] = useState(() => ERAS.find(e => e.group.code === 'LS'));
 
   // Card art is drawn on canvas, so wait for the fonts it uses.
   useEffect(() => {
@@ -127,19 +129,29 @@ export default function Game() {
               <div className="space-y-4">
                 <Badge variant="secondary" className="gap-1.5">
                   <Sparkles className="size-3 text-primary" />
-                  Neon Bloom is out now
+                  LE SSERAFIM just joined the club
                 </Badge>
                 <h1 className="font-heading text-[clamp(2.25rem,5.5vw,3.75rem)] leading-[1.05] font-semibold tracking-tight text-balance">
                   Open an album, chase your <span className="text-primary">bias</span>.
                 </h1>
                 <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
-                  Every album holds five photocards from the five-member group MOONFLARE. Album PCs are plain, selfies glitter,
-                  POBs shimmer, and lucky draws catch the light like real holo foil.
+                  Every album holds five photocards from one comeback, by MOONFLARE or LE SSERAFIM. Album PCs are plain, selfies
+                  glitter, POBs shimmer, and lucky draws catch the light like real holo foil.
                 </p>
               </div>
 
+              <Tabs value={albumGroup} onValueChange={setAlbumGroup}>
+                <TabsList>
+                  {GROUPS.map(g => (
+                    <TabsTrigger key={g.code} value={g.code}>
+                      {g.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+
               <div className="grid gap-3 sm:grid-cols-2">
-                {ERAS.map(era => (
+                {ERAS.filter(era => era.group.code === albumGroup).map(era => (
                   <Card key={era.code} className="flex-row items-center gap-4 p-3 transition hover:ring-primary/40">
                     {/* Wrapped so Card's first-child img rules (no top padding, square top corners) don't apply. */}
                     <div className="size-24 shrink-0">
@@ -218,7 +230,7 @@ export default function Game() {
                 <HoloCard
                   image={getArt(HERO_CARD)}
                   backImage={getBack(HERO_CARD.era)}
-                  alt="Haneul lucky draw photocard, tap to flip"
+                  alt={`${HERO_CARD.member.name} lucky draw photocard, tap to flip`}
                   tiltMax={16}
                   style={{ '--hc-w': 'clamp(220px, 28vw, 320px)' }}
                   {...foilFor(HERO_CARD)}
@@ -239,7 +251,10 @@ export default function Game() {
 
       <footer className="border-t">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-muted-foreground">
-          <span>MOONFLARE is a made-up group. Your collection saves in this browser only.</span>
+          <span>
+            MOONFLARE is a made-up group. LE SSERAFIM photos load from the K-pop Fandom wiki; this is a fan project, not
+            affiliated with Source Music or HYBE. Your collection saves in this browser only.
+          </span>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="-mx-2 text-muted-foreground">
