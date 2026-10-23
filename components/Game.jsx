@@ -90,7 +90,7 @@ export default function Game() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-2.5">
             <MoonStar className="size-5 text-primary" />
-            <span className="font-heading text-xl">Moonflare</span>
+            <span className="font-heading text-lg font-semibold tracking-tight">Moonflare</span>
             <Badge variant="outline" className="hidden font-mono text-[10px] tracking-wider text-muted-foreground uppercase sm:inline-flex">
               Photocard Club
             </Badge>
@@ -133,7 +133,7 @@ export default function Game() {
                   <Sparkles className="size-3 text-primary" />
                   Neon Bloom is out now
                 </Badge>
-                <h1 className="font-heading text-[clamp(2.5rem,6vw,4rem)] leading-[1.02] text-balance">
+                <h1 className="font-heading text-[clamp(2.25rem,5.5vw,3.75rem)] leading-[1.05] font-semibold tracking-tight text-balance">
                   Open an album, chase your <span className="text-primary">bias</span>.
                 </h1>
                 <p className="max-w-xl text-base leading-relaxed text-muted-foreground">

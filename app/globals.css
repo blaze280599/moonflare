@@ -6,9 +6,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: "Bagel Fat One", "Arial Rounded MT Bold", sans-serif;
-  --font-sans: "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-mono: "DM Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-heading: "Geist", "Gothic A1", system-ui, sans-serif;
+  --font-sans: "Geist", "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --color-rarity-common: var(--rarity-common);
   --color-rarity-rare: var(--rarity-rare);
   --color-rarity-epic: var(--rarity-epic);

@@ -19,7 +19,7 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
     <section id="binder" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 pb-16">
       <Card>
         <CardHeader className="border-b">
-          <CardTitle className="font-heading text-2xl font-normal">Your binder</CardTitle>
+          <CardTitle className="font-heading text-2xl font-semibold tracking-tight">Your binder</CardTitle>
           <CardDescription>
             {count} of {cards.length} {era.name} cards collected
           </CardDescription>

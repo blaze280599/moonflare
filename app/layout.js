@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=DM+Mono:wght@400;500&family=Gothic+A1:wght@400;500;700;800&family=Nanum+Pen+Script&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Gothic+A1:wght@400;500;600;700&display=swap"
         />
       </head>
       <body>
