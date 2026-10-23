@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "next-dev",
+      "runtimeExecutable": "C:\\Windows\\System32\\cmd.exe",
+      "runtimeArgs": [
+        "/d",
+        "/c",
+        "cd /d \"C:\\Users\\blazi\\Desktop\\AI Projects\\Moonflare\" && \"C:\\Program Files\\nodejs\\node.exe\" node_modules\\next\\dist\\bin\\next dev -p 3000"
+      ],
+      "port": 3000
+    }
+  ]
+}
