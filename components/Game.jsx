@@ -122,7 +122,7 @@ export default function Game() {
       </header>
 
       <main className="flex-1">
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-x-clip">
           <div aria-hidden className="pointer-events-none absolute -top-48 right-[-10%] size-[640px] rounded-full bg-primary/15 blur-[140px]" />
           <div aria-hidden className="pointer-events-none absolute top-40 left-[-15%] size-[520px] rounded-full bg-rarity-epic/10 blur-[140px]" />
 
@@ -145,11 +145,14 @@ export default function Game() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {ERAS.map(era => (
                   <Card key={era.code} className="flex-row items-center gap-4 p-3 transition hover:ring-primary/40">
-                    {artReady ? (
-                      <img alt={`${era.name} album cover`} src={getCover(era)} className="size-24 shrink-0 rounded-lg object-cover shadow-lg shadow-black/40" />
-                    ) : (
-                      <div className="size-24 shrink-0 rounded-lg bg-muted" />
-                    )}
+                    {/* Wrapped so Card's first-child img rules (no top padding, square top corners) don't apply. */}
+                    <div className="size-24 shrink-0">
+                      {artReady ? (
+                        <img alt={`${era.name} album cover`} src={getCover(era)} className="size-full rounded-lg object-cover shadow-lg shadow-black/40" />
+                      ) : (
+                        <div className="size-full rounded-lg bg-muted" />
+                      )}
+                    </div>
                     <div className="min-w-0 space-y-1">
                       <CardTitle className="text-base">{era.name}</CardTitle>
                       <CardDescription className="text-xs">{era.sub} · 5 photocards</CardDescription>
@@ -162,7 +165,7 @@ export default function Game() {
                 ))}
               </div>
 
-              <Card size="sm" className="max-w-xl">
+              <Card size="sm">
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">Lucky-draw pity</span>
@@ -243,7 +246,7 @@ export default function Game() {
           <span>MOONFLARE is a made-up group. Your collection saves in this browser only.</span>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <Button variant="ghost" size="sm" className="-mx-2 text-muted-foreground">
                 <RotateCcw />
                 Reset collection
               </Button>

@@ -18,12 +18,13 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
   return (
     <section id="binder" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 pb-16">
       <Card>
-        <CardHeader className="border-b">
+        <CardHeader className="border-b max-sm:flex max-sm:flex-col">
           <CardTitle className="font-heading text-2xl font-semibold tracking-tight">Your binder</CardTitle>
           <CardDescription>
             {count} of {cards.length} {era.name} cards collected
           </CardDescription>
-          <CardAction>
+          <Progress value={(count / cards.length) * 100} className="mt-1.5 h-1.5 max-w-xs max-sm:max-w-none" />
+          <CardAction className="max-sm:mt-2">
             <Tabs value={era.code} onValueChange={code => onEraChange(ERAS.find(e => e.code === code))}>
               <TabsList>
                 {ERAS.map(e => (
@@ -35,9 +36,8 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
             </Tabs>
           </CardAction>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <Progress value={(count / cards.length) * 100} className="h-1.5" />
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-3 sm:grid-cols-[repeat(auto-fill,minmax(120px,1fr))] sm:gap-4">
+        <CardContent>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-3 sm:grid-cols-[repeat(auto-fill,minmax(120px,1fr))] sm:gap-4">
             {cards.map(c => {
               const n = owned[c.id] || 0;
               const who = c.member ? c.member.name : 'Group';

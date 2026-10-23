@@ -58,8 +58,9 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
   return (
     <div className="stage" role="dialog" aria-modal="true" aria-label="Album opening">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-xs tracking-wider text-white/55 uppercase">
-          MOONFLARE · {era.name} · {era.sub}
+        <span className="min-w-0 truncate font-mono text-xs tracking-wider text-white/55 uppercase">
+          MOONFLARE · {era.name}
+          <span className="max-sm:hidden"> · {era.sub}</span>
         </span>
         <Button variant="ghost" size="icon-lg" onClick={onClose} aria-label="Close" className="text-white hover:bg-white/10">
           <X />
@@ -78,13 +79,13 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
                 <span key={i} className={cn('size-2.5 rounded-full border border-white/50 transition', i < taps && 'border-white bg-white')} />
               ))}
             </div>
-            <p className="font-mono text-xs tracking-wider text-white/55 uppercase">
+            <p className="px-4 font-mono text-xs tracking-wider text-balance text-white/55 uppercase">
               Tap the album {TAPS_TO_OPEN} times to rip the shrink-wrap
             </p>
           </div>
         ) : (
           <div className="grid justify-items-center">
-            <p className="mb-6 text-center font-mono text-xs tracking-wider text-white/55 uppercase">
+            <p className="mb-6 px-4 text-center font-mono text-xs tracking-wider text-balance text-white/55 uppercase">
               Tap a card to flip it · a glow means Epic or better
             </p>
             <div className="flex max-w-[1100px] flex-wrap justify-center gap-[clamp(10px,2vw,22px)]">
