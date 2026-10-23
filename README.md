@@ -34,14 +34,6 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
 - **Fan chant / lightstick mode.** Shake or tap during a Legendary reveal and a lightstick glows in the group's color.
 
-### Whose faces go on the cards
-
-Using real idols' photos and names gets into copyright (the photos belong to the agencies and photographers) and likeness rights. That's fine for a private project, but risky if it goes public or makes money. The options:
-
-- **Original fictional idols (best if it might launch).** Your own groups, with their own names, members, lore and art. It's fully yours, and fans get attached to fictional groups too (think Ensemble Stars). **This build uses this option: MOONFLARE is made up.**
-- **Fan-art style.** Commissioned or user-drawn art. A gray area, but a common one.
-- **Personal use only.** Upload your own photos for a private binder, and don't distribute it. The card view's "try your own photo" preview fits here.
-
 ### Tech stack
 
 - **Prototype:** a single HTML page with the foil shader, card flips and confetti. Kept in `prototype/`.
