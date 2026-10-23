@@ -1,9 +1,12 @@
 import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
+import { GameProvider } from '@/components/GameProvider';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = {
-  title: 'Moonflare Photocard Club',
+  title: { default: 'Moonflare Photocard Club', template: '%s · Moonflare' },
   description: 'Open MOONFLARE albums, flip holo photocards, and fill your binder.'
 };
 
@@ -28,7 +31,15 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <GameProvider>
+            <div className="flex min-h-dvh flex-col">
+              <SiteHeader />
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
+            </div>
+          </GameProvider>
+        </TooltipProvider>
         <Toaster theme="dark" position="bottom-center" />
       </body>
     </html>

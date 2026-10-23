@@ -46,6 +46,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] A real group: LE SSERAFIM, 7 eras from FEARLESS to PUREFLOW Pt.1, 147 photo cards (see [Real groups](#real-groups))
 - [x] Album opening animation with a 5-card reveal
 - [x] Binder collection view with completion %
+- [x] Landing page, nav bar, and a page per group plus a collection page
 - [ ] Daily free pack, saved in localStorage (the build gives 300 daily stars instead, enough for 3 albums, resetting at the player's local midnight)
 
 ### Real groups
@@ -85,7 +86,8 @@ Then open http://localhost:3000.
 
 - `components/HoloCard/` holds the React Bits HoloCard (JS-CSS variant). It has four small changes, each marked with a comment:
   a controlled `flipped` prop, an `onClick` prop, starting face-down without a flip animation, and releasing the WebGL context on unmount.
-- `components/Game.jsx` is the page: stats bar, hero card, albums and binder.
+- Pages: `/` is the landing page (`components/Landing.jsx`), `/groups/<slug>` is one group's albums (`components/GroupPage.jsx`), and `/collection` is the binder (`components/Collection.jsx`).
+- `components/SiteHeader.jsx` is the nav bar shown on every page, with stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
 - `components/OpeningStage.jsx` handles ripping the shrink-wrap and flipping the five cards.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `lib/cards.js` is the card catalog (groups, eras, cards) and the foil each rarity gets.

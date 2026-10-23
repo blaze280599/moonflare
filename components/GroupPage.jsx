@@ -1,0 +1,142 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Package } from 'lucide-react';
+import { toast } from 'sonner';
+import OpeningStage from '@/components/OpeningStage';
+import PackInfo from '@/components/PackInfo';
+import { useGameContext } from '@/components/GameProvider';
+import { CARDS, ERAS, GROUP_BY_SLUG } from '@/lib/cards';
+import { getCover } from '@/lib/art';
+import { PACK_COST } from '@/lib/gacha';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+
+// One group's albums, newest first, and the opening stage for them.
+export default function GroupPage({ slug }) {
+  const group = GROUP_BY_SLUG[slug];
+  const router = useRouter();
+  const { state, loaded, artReady, openPack, inspecting, inspect, setBinderEra } = useGameContext();
+  const [pack, setPack] = useState(null); // { id, era, pulls }
+
+  const eras = ERAS.filter(e => e.group === group).reverse();
+  const groupCards = CARDS.filter(c => c.era.group === group);
+  const groupOwned = groupCards.filter(c => state.owned[c.id]).length;
+  const canAfford = state.coins >= PACK_COST;
+
+  const startPack = era => {
+    const pulls = openPack(era);
+    if (!pulls) {
+      toast(`You need ${PACK_COST} ★`, { description: 'Claim your daily stars, or open albums to earn stars from duplicates.' });
+      return;
+    }
+    setPack({ id: Date.now(), era, pulls });
+  };
+
+  useEffect(() => {
+    document.body.style.overflow = pack ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [pack]);
+
+  // Escape closes the stage, unless a card dialog is open on top of it. The listener runs in the
+  // capture phase on window, before Radix's own Escape handler closes the dialog and clears `inspecting`.
+  const inspectingRef = useRef(null);
+  inspectingRef.current = inspecting;
+  useEffect(() => {
+    if (!pack) return;
+    const onKey = e => {
+      if (e.key === 'Escape' && !inspectingRef.current) setPack(null);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [pack]);
+
+  return (
+    <div className="relative overflow-x-clip">
+      <div aria-hidden className="pointer-events-none absolute -top-56 right-[-10%] size-[560px] rounded-full bg-primary/10 blur-[140px]" />
+
+      <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <header className="space-y-4 border-b pb-8">
+          <p className="font-mono text-xs tracking-wider text-primary uppercase">Albums</p>
+          <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">{group.name}</h1>
+          <p className="max-w-xl text-muted-foreground">{group.blurb}</p>
+          <ul className="flex flex-wrap gap-2" aria-label="Members">
+            {group.members.map(m => (
+              <li key={m.code} className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs">
+                {/* Member colors are data, so they're set inline rather than as theme tokens. */}
+                <span className="size-2 rounded-full" style={{ background: m.color }} />
+                {m.name}
+              </li>
+            ))}
+          </ul>
+          <div className="max-w-xs space-y-1.5 pt-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Collected</span>
+              <span className="tabular-nums">{loaded ? `${groupOwned} / ${groupCards.length}` : '—'}</span>
+            </div>
+            <Progress value={loaded ? (groupOwned / groupCards.length) * 100 : 0} className="h-1" />
+          </div>
+        </header>
+
+        <div className="grid gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+            {eras.map(era => {
+              const cards = groupCards.filter(c => c.era === era);
+              const owned = cards.filter(c => state.owned[c.id]).length;
+              return (
+                <Card key={era.code} className="gap-0 p-0 transition hover:ring-primary/40">
+                  {/* Wrapped so Card's first-child img rules don't apply. */}
+                  <div className="p-2 pb-0 sm:p-3 sm:pb-0">
+                    {artReady ? (
+                      <img alt={`${era.name} album cover`} src={getCover(era)} className="aspect-square w-full rounded-lg object-cover shadow-lg shadow-black/40" />
+                    ) : (
+                      <div className="aspect-square w-full rounded-lg bg-muted" />
+                    )}
+                  </div>
+                  <CardContent className="flex flex-1 flex-col gap-1 p-3 sm:p-4">
+                    <CardTitle className="truncate text-base">{era.name}</CardTitle>
+                    <CardDescription className="text-xs">{era.sub}</CardDescription>
+                    <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+                      <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
+                      <span className="tabular-nums">{loaded ? `${owned}/${cards.length}` : '—'}</span>
+                    </div>
+                    <Button className="mt-3 w-full" disabled={!loaded || !artReady || !canAfford} onClick={() => startPack(era)}>
+                      <Package />
+                      Open · {PACK_COST} ★
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start">
+            <PackInfo />
+            <p className="px-1 text-xs text-muted-foreground">Every album holds five photocards from that era.</p>
+          </aside>
+        </div>
+      </div>
+
+      {pack && (
+        <OpeningStage
+          key={pack.id}
+          era={pack.era}
+          pulls={pack.pulls}
+          canAffordAnother={canAfford}
+          onOpenAnother={startPack}
+          onInspect={inspect}
+          onGoToBinder={era => {
+            setBinderEra(era);
+            setPack(null);
+            router.push('/collection');
+          }}
+          onClose={() => setPack(null)}
+        />
+      )}
+    </div>
+  );
+}
