@@ -5,7 +5,7 @@ import {
   FOILS,
   MAX_WANT,
   NO_CRITERIA,
-  canSee,
+  inBinder,
   checkOffer,
   describeWant,
   foilOf,
@@ -103,10 +103,10 @@ test('checkOffer needs the right count, matching cards and enough copies', () =>
   assert.ok(checkOffer(w, 'EZ-KZ-pob', owned));
 });
 
-test('canSee shows art only for cards in the binder', () => {
-  assert.ok(canSee({ 'EZ-KZ-pob': 1 }, 'EZ-KZ-pob'));
-  assert.ok(!canSee({ 'EZ-KZ-pob': 0 }, 'EZ-KZ-pob'));
-  assert.ok(!canSee({}, 'EZ-KZ-pob'));
+test('inBinder is true only for cards the player holds', () => {
+  assert.ok(inBinder({ 'EZ-KZ-pob': 1 }, 'EZ-KZ-pob'));
+  assert.ok(!inBinder({ 'EZ-KZ-pob': 0 }, 'EZ-KZ-pob'));
+  assert.ok(!inBinder({}, 'EZ-KZ-pob'));
 });
 
 test('describeWant reads like the criteria', () => {

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ArrowLeftRight, Clock, Inbox, Repeat, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { CARD_BY_ID } from '@/lib/cards';
-import { canSee, describeWant, offerOptions } from '@/lib/trade';
+import { describeWant, inBinder, offerOptions } from '@/lib/trade';
 import { acceptOffer, cancelListing, createListing, declineOffer, loadBoard, makeOffer, withdrawOffer } from '@/app/actions/trade';
 import { useGameContext } from '@/components/GameProvider';
 import { ListCardDialog } from '@/components/ListCardDialog';
@@ -86,7 +86,7 @@ export default function TradeBoard({ initialBoard }) {
   const board = data.board.filter(l => !l.myOffer && (!fillable || canFill(l))).sort((a, b) => canFill(b) - canFill(a));
   const myOffers = data.board.filter(l => l.myOffer);
   const incoming = data.mine.reduce((n, l) => n + l.offers.length, 0);
-  const thumb = (card, visible) => <TradeCardThumb card={card} visible={visible} artReady={artReady} onInspect={inspect} />;
+  const thumb = card => <TradeCardThumb card={card} artReady={artReady} onInspect={inspect} />;
 
   return (
     <Page action={loaded && <ListCardDialog owned={owned} artReady={artReady} onList={(id, want) => act(() => createListing(id, want), 'Card listed')} />}>
@@ -111,7 +111,7 @@ export default function TradeBoard({ initialBoard }) {
               {board.map(l => {
                 const card = CARD_BY_ID[l.cardId];
                 return (
-                  <ListingCard key={l.id} card={card} thumb={thumb(card, canSee(owned, card.id))} listing={l} by={l.lister}>
+                  <ListingCard key={l.id} card={card} thumb={thumb(card)} missing={!inBinder(owned, card.id)} listing={l} by={l.lister}>
                     <span className="text-xs text-muted-foreground">{l.offerCount ? `${plural(l.offerCount, 'offer')} so far` : 'No offers yet'}</span>
                     <MakeOfferDialog
                       listing={l}
@@ -136,7 +136,7 @@ export default function TradeBoard({ initialBoard }) {
             data.mine.map(l => {
               const card = CARD_BY_ID[l.cardId];
               return (
-                <ListingCard key={l.id} card={card} thumb={thumb(card, true)} listing={l} by="you">
+                <ListingCard key={l.id} card={card} thumb={thumb(card)} listing={l} by="you">
                   <span className="text-xs text-muted-foreground">{l.offers.length ? plural(l.offers.length, 'offer') : 'Waiting for offers'}</span>
                   <Confirm
                     trigger={<Button variant="outline">Cancel listing</Button>}
@@ -186,7 +186,7 @@ export default function TradeBoard({ initialBoard }) {
             myOffers.map(l => {
               const card = CARD_BY_ID[l.cardId];
               return (
-                <ListingCard key={l.id} card={card} thumb={thumb(card, canSee(owned, card.id))} listing={l} by={l.lister}>
+                <ListingCard key={l.id} card={card} thumb={thumb(card)} missing={!inBinder(owned, card.id)} listing={l} by={l.lister}>
                   <div className="w-full space-y-3">
                     <p className="text-sm font-medium">You offered</p>
                     <OfferedCards ids={l.myOffer.cards} owned={owned} thumb={thumb} mine />
@@ -208,7 +208,7 @@ export default function TradeBoard({ initialBoard }) {
           {data.history.length ? (
             <ItemGroup className="gap-2">
               {data.history.map(h => (
-                <HistoryRow key={h.id} entry={h} owned={owned} thumb={thumb} />
+                <HistoryRow key={h.id} entry={h} thumb={thumb} />
               ))}
             </ItemGroup>
           ) : (
@@ -243,7 +243,7 @@ function Page({ action, children }) {
           <div className="space-y-2">
             <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Trade board</h1>
             <p className="max-w-xl text-muted-foreground">
-              Swap duplicates with other players. Cards you haven’t pulled stay face down until they’re yours.
+              Swap duplicates with other players. Cards you don’t have yet are marked, so you can spot the ones you need.
             </p>
           </div>
           {action}
@@ -254,14 +254,14 @@ function Page({ action, children }) {
   );
 }
 
-// One listing: the card (face down unless `thumb` was made visible), its facts, what the lister wants.
-function ListingCard({ card, thumb, listing, by, children }) {
+// One listing: the card, its facts, what the lister wants.
+function ListingCard({ card, thumb, missing, listing, by, children }) {
   return (
     <Card>
       <CardContent className="flex gap-4">
         {thumb}
         <div className="min-w-0 flex-1 space-y-3">
-          <CardFacts card={card} />
+          <CardFacts card={card} missing={missing} />
           <div className="space-y-1 text-sm">
             <p className="text-xs font-medium text-muted-foreground">Wants</p>
             <p>{describeWant(listing.want)}</p>
@@ -277,7 +277,7 @@ function ListingCard({ card, thumb, listing, by, children }) {
   );
 }
 
-// Cards in an offer. Your own offered cards always show; anyone else's follow the no-spoiler rule.
+// Cards in an offer. Someone else's cards say if you don't have them yet; your own never do.
 function OfferedCards({ ids, owned, thumb, mine = false }) {
   return (
     <div className="flex flex-wrap gap-3">
@@ -285,8 +285,8 @@ function OfferedCards({ ids, owned, thumb, mine = false }) {
         const card = CARD_BY_ID[id];
         return (
           <div key={`${id}-${i}`} className="flex w-full items-center gap-3 sm:w-auto">
-            {thumb(card, mine || canSee(owned, id))}
-            <CardFacts card={card} />
+            {thumb(card)}
+            <CardFacts card={card} missing={!mine && !inBinder(owned, id)} />
           </div>
         );
       })}
@@ -303,7 +303,7 @@ const STATUS = {
   expired: ['Expired', 'outline']
 };
 
-function HistoryRow({ entry: h, owned, thumb }) {
+function HistoryRow({ entry: h, thumb }) {
   const card = CARD_BY_ID[h.cardId];
   const [label, variant] = STATUS[h.status];
   const traded = label === 'Traded';
@@ -325,10 +325,9 @@ function HistoryRow({ entry: h, owned, thumb }) {
         {h.closedAt && <ItemDescription>{new Date(h.closedAt).toLocaleDateString()}</ItemDescription>}
         {traded && (
           <div className="flex flex-wrap gap-2">
-            {/* The listed card is the lister's own; what they received is theirs now. Same for the offerer. */}
-            {thumb(card, h.role === 'lister' || canSee(owned, card.id))}
+            {thumb(card)}
             {h.cards.map((id, i) => (
-              <span key={`${id}-${i}`}>{thumb(CARD_BY_ID[id], h.role === 'offerer' || canSee(owned, id))}</span>
+              <span key={`${id}-${i}`}>{thumb(CARD_BY_ID[id])}</span>
             ))}
           </div>
         )}

@@ -1,9 +1,8 @@
 'use client';
 
-import { EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RARITY } from '@/lib/cards';
-import { getArt, getBack } from '@/lib/art';
+import { getArt } from '@/lib/art';
 import { foilLabel } from '@/lib/trade';
 import { RARITY_BADGE, RARITY_RING } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
@@ -11,28 +10,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const cardName = card => `${card.member ? card.member.name : 'Group'} · ${card.label}`;
 
-// A card on the trade board. `visible` is the no-spoiler rule (canSee in lib/trade.js, or the player's own
-// card): hidden cards show their album's card back, never the art, and can't be opened in the card dialog.
-export function TradeCardThumb({ card, visible, artReady, onInspect, className }) {
-  const label = `${cardName(card)}, ${card.era.name}${visible ? '' : ', face down: not in your binder yet'}`;
+// A card on the trade board. Every card shows its art, owned or not: you can't trade for a card you can't see.
+export function TradeCardThumb({ card, artReady, onInspect, className }) {
   if (!artReady) return <Skeleton className={cn('aspect-[63/88] w-20 shrink-0 rounded-md sm:w-24', className)} />;
-  if (!visible) {
-    return (
-      <div role="img" aria-label={label} className={cn('relative aspect-[63/88] w-20 shrink-0 overflow-hidden rounded-md sm:w-24', className)}>
-        <img alt="" src={getBack(card.era)} className="size-full object-cover" />
-        <span className="absolute inset-x-0 bottom-1.5 flex justify-center">
-          <Badge variant="secondary" className="gap-1 bg-black/60 text-white">
-            <EyeOff />
-            Face down
-          </Badge>
-        </span>
-      </div>
-    );
-  }
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={`${cardName(card)}, ${card.era.name}`}
       onClick={() => onInspect?.(card)}
       className={cn(
         'relative aspect-[63/88] w-20 shrink-0 overflow-hidden rounded-md ring-2 transition hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:outline-none sm:w-24',
@@ -45,8 +29,8 @@ export function TradeCardThumb({ card, visible, artReady, onInspect, className }
   );
 }
 
-// The facts every player may see about a card, owned or not.
-export function CardFacts({ card }) {
+// A card's facts. `missing` marks a card the player doesn't have yet (inBinder in lib/trade.js), a reason to trade.
+export function CardFacts({ card, missing = false }) {
   return (
     <div className="min-w-0 space-y-1.5">
       <div className="truncate font-medium">{cardName(card)}</div>
@@ -56,6 +40,7 @@ export function CardFacts({ card }) {
       <div className="flex flex-wrap gap-1">
         <Badge className={RARITY_BADGE[card.rarity]}>{RARITY[card.rarity].label}</Badge>
         <Badge variant="outline">{foilLabel(card)}</Badge>
+        {missing && <Badge variant="secondary">Not in your binder</Badge>}
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export function MakeOfferDialog({ listing, card, owned, artReady, onOffer }) {
             return (
               <Item key={c.id} variant="outline" size="sm" className="flex-nowrap">
                 <ItemMedia>
-                  <TradeCardThumb card={c} visible artReady={artReady} className="w-12 sm:w-14" />
+                  <TradeCardThumb card={c} artReady={artReady} className="w-12 sm:w-14" />
                 </ItemMedia>
                 <ItemContent className="min-w-0">
                   <CardFacts card={c} />

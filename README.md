@@ -54,7 +54,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Toploader decorating: a decorate mode in the card dialog, 16 built-in SVG stickers, 6 tints, saved per account
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 - [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
-- [x] Trading: list a card with criteria for what you want back, offer matching cards, accept or decline, with escrow and no spoilers (see [Trading](#trading))
+- [x] Trading: list a card with criteria for what you want back, offer matching cards, accept or decline, with escrow (see [Trading](#trading))
 
 ### Comeback events
 
@@ -83,11 +83,11 @@ closes when its window ends. Don't delete or rename an event era once anyone own
   A listing past its date closes as expired and returns everything (checked whenever anyone loads the board or
   trades, so it doesn't need a scheduled job).
 
-**No spoilers.** A card's art only shows on the trade board to a player who has that card in their binder. Everyone
-else sees the album's card back, marked "Face down", with the facts: group, album, member, rarity and foil. That
-applies to the lister too: offered cards they don't own stay face down until they accept. Once a trade lands the card
-is in your binder, so its art shows everywhere. Wants are criteria for the same reason, so nobody picks a card from
-the full catalog to ask for. The member is shown because it's what bias trading is about; the photo is the surprise.
+**Every card shows.** The board and offers show each card's art, so you always see what you'd give and get. Cards
+you don't have yet carry a "Not in your binder" badge, which is how you spot the ones worth trading for. (An earlier
+version kept unowned cards face down to avoid spoilers; it was dropped because nobody can judge a trade blind, and the
+text already named the card.) Wants are still criteria rather than specific cards, so one listing can be filled by many
+different cards.
 
 **Escrow.** Listing or offering a card takes that copy out of your binder straight away, and it sits in the listing
 or offer until the trade closes. A copy is always in exactly one place, so it can't be offered twice, and nothing can

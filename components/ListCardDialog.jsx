@@ -61,7 +61,7 @@ export function ListCardDialog({ owned, artReady, onList }) {
           <DialogHeader>
             <DialogTitle>List a card for trade</DialogTitle>
             <DialogDescription>
-              Pick a card, then say what you’d take for it. Other players see your card face down unless they already have it.
+              Pick a card, then say what you’d take for it.
             </DialogDescription>
           </DialogHeader>
 
@@ -94,7 +94,7 @@ export function ListCardDialog({ owned, artReady, onList }) {
               </Select>
               {card && (
                 <div className="flex items-center gap-3 pt-1">
-                  <TradeCardThumb card={card} visible artReady={artReady} className="w-14 sm:w-16" />
+                  <TradeCardThumb card={card} artReady={artReady} className="w-14 sm:w-16" />
                   <CardFacts card={card} />
                 </div>
               )}
