@@ -32,6 +32,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users. *(Built: see [Trading](#trading).)*
 - **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back. *(Built: see [Comeback events](#comeback-events). Event albums use the normal pull rates and pity.)*
 - **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
+- **Player profiles.** A page per player to show off. *(Built: see [Player profiles](#player-profiles).)*
 
 ### Tech stack
 
@@ -52,6 +53,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Pick your bias: a favourite member per group (saved in `saves.bias`) gets 2 points more of the member cards
 - [x] Sound and sparkle: the cut rips louder and brighter the faster you drag, and Rare-or-better reveals chime and sparkle (more for rarer cards). A switch on the opening stage turns sound off, remembered per browser
 - [x] Toploader decorating: a decorate mode in the card dialog, 16 built-in SVG stickers, 6 tints, saved per account
+- [x] Player profiles: a page per player with a picture, banner, bio, favourites, a showcase of up to 9 cards, stats, a bias wall and badges
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 - [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
 - [x] Trading: list a card with criteria for what you want back, offer matching cards, accept or decline, with escrow (see [Trading](#trading))
@@ -97,6 +99,34 @@ listings and offers (returning the cards, and other players' offers on your list
 Every trade change is one Postgres function (`supabase/migrations/*_trading.sql`) that runs in a single transaction,
 locks the saves it touches, and bumps their `version`. The Server Actions in `app/actions/trade.js` check the player
 and validate cards and criteria against the catalog (`lib/trade.js`) before calling them with the secret key.
+
+### Player profiles
+
+Every player has a page at `/players/<username>`, and `/profile` goes to your own. Any signed-in player can view
+one; only its owner sees the edit controls. Usernames on the trade board and the header's account menu link here.
+
+- **Picture.** Upload a photo, drag and zoom it into a round frame (arrow keys work too), and it's saved as a
+  256px WebP (JPEG where the browser can't encode WebP) in a private Supabase Storage bucket, `avatars`, under
+  the player's own folder. Pages show it through signed links that last a day. No picture, or an expired link, shows
+  initials instead.
+- **Banner.** One of five preset gradients built from theme colours, the cover of an album you own a card from,
+  or a card from your showcase. If you lose that card, the default preset shows instead.
+- **Bio and favourites.** A one-line bio (160 characters), a favourite group and a favourite member. The favourite
+  member is only for the profile; the pull-rate boost is still the per-group bias on each group's page.
+- **Showcase.** Up to 9 owned cards in your order: drag to reorder with a mouse, or use the arrow buttons under each
+  card (keyboard and touch). Decorated cards show in their toploader. A showcased card you no longer own (traded,
+  in escrow, reset) is hidden but stays stored, and comes back if the card does.
+- **Stats, bias wall and badges.** Collection numbers (cards, copies, completed albums, Mythics, albums opened,
+  trades, rarest pull), up to 6 of your favourite member's cards, and 9 badges. All of it is worked out from the
+  save each time the page loads, so nothing can be granted by hand, and it follows a Reset.
+
+Other players' saves never reach the browser: the server reads the profile and save with the secret key and sends
+only what the page shows (`lib/supabase/profiles.js`). Every change goes through `app/actions/profile.js`, which
+cleans it against the player's save with `lib/profile.js` (tested in `tests/profile.test.js`).
+
+Ideas not built yet: an uploaded banner image, a pinned "currently looking for" trade list, profile comments or
+guestbook stickers, showing which badges are rare across all players, and a "pity survivor" badge (it needs a record
+of past pity streaks, which the save doesn't keep).
 
 ### Real groups
 
