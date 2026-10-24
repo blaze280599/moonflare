@@ -86,6 +86,11 @@ export default function SiteHeader({ player }) {
                 <Link href="/collection">Collection</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild active={isActive(pathname, '/trade')} className={navigationMenuTriggerStyle()}>
+                <Link href="/trade">Trade</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -163,6 +168,9 @@ export default function SiteHeader({ player }) {
                 <Separator className="my-2" />
                 <MobileLink href="/collection" pathname={pathname}>
                   Collection
+                </MobileLink>
+                <MobileLink href="/trade" pathname={pathname}>
+                  Trade
                 </MobileLink>
               </nav>
               {player && (
