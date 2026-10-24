@@ -90,7 +90,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **Tailwind class names must appear whole in the source.** Don't build them from strings (`'bg-rarity-' + r`). Add them to a map like `lib/rarity-styles.js` instead.
 - **New shadcn components:** `npx shadcn@latest add <name>`. Check `components.json` and don't change the preset or the `cn` import.
 - **Copy:** plain, specific UI text from the player's side ("Open · 100 ★", "Erase collection"). K-pop terms like PC, POB, bias and lucky draw are fine; that's the audience's language.
-- **Dependencies:** pin exact versions, prefer what's already installed, and check `npm warn` output for security advisories. Next.js had a CVE in 15.3.x, which is why it's on 15.5.x.
+- **Dependencies:** pin exact versions, prefer what's already installed, and check `npm warn` output for security advisories. Next.js had a CVE in 15.3.x, which is why it's on 15.5.x. `npm audit` still flags the `postcss` copy bundled inside Next 15 (only fixed in Next 16, a major upgrade). It runs at build time on our own CSS, never on player input, so it's accepted for now; don't `npm audit fix --force` it.
 
 ## Gotchas
 
