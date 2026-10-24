@@ -18,7 +18,7 @@ export default function SiteFooter() {
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-start">
-          {[...GROUPS.map(g => [`/groups/${g.slug}`, g.name]), ['/collection', 'Collection']].map(([href, label]) => (
+          {[...GROUPS.map(g => [`/groups/${g.slug}`, g.name]), ['/collection', 'Collection'], ['/trade', 'Trade']].map(([href, label]) => (
             <Button key={href} asChild variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
               <Link href={href}>{label}</Link>
             </Button>

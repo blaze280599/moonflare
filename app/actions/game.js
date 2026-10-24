@@ -95,8 +95,14 @@ export async function claimDaily() {
   });
 }
 
+// Open listings and offers are withdrawn first, so the cards in escrow come back (and are erased with the rest)
+// and other players' offers on this player's listings go home.
 export async function reset() {
-  return withPlayer(player => updateSave(player.id, state => ({ state: resetState(state) })));
+  return withPlayer(async player => {
+    const { error } = await createAdminClient().rpc('trade_release_all', { p_player: player.id });
+    if (error) return { error: FAILED };
+    return updateSave(player.id, state => ({ state: resetState(state) }));
+  });
 }
 
 // Brings an old browser save (localStorage `moonflare-save-v1`) into the account, once.

@@ -29,14 +29,14 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Pick your bias.** Choose a favorite member and get a small boost to their pull rate. *(Built: one bias per group, picked on the group page. Their share of each member rarity goes up by 2 percentage points (20% → 22%), taken evenly from the other members, so about 21.9% of cards instead of 19.9%. Rarity odds don't change. The boost is capped at 1–2 points on purpose.)*
 - **Binder pages.** Collections shown as plastic sleeves in a binder, the way collectors really display PCs. *(Basic version built.)*
 - **Decorate your toploader.** Sticker and deco customization for favorite cards. This is huge in the real hobby. *(Built: put any owned card in a tinted toploader and place, move, resize and turn up to 16 stickers from a built-in set. Decorated cards show in their toploader in the binder.)*
-- **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users.
+- **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users. *(Built: see [Trading](#trading).)*
 - **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back. *(Built: see [Comeback events](#comeback-events). Event albums use the normal pull rates and pity.)*
 - **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
 
 ### Tech stack
 
 - **Prototype:** a single HTML page with the foil shader, card flips and confetti. Kept in `prototype/`.
-- **Full website:** Next.js (this repo), with Supabase for accounts and per-account saves (built) and, next, trades, hosted on Vercel.
+- **Full website:** Next.js (this repo), with Supabase for accounts, per-account saves and trades (built), hosted on Vercel.
 - **Game feel:** the pack is a real 3D object built with three.js (`lib/pack3d.js`), cut open by pressing on the dotted line near its top and dragging along it, in the spirit of Pokémon TCG Pocket. Sound is synthesized in the browser with the Web Audio API (`lib/sound.js`, no audio files): a rip that follows how fast you cut, and chimes when a Rare-or-better card is revealed.
 
 ### MVP (version 1)
@@ -54,6 +54,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Toploader decorating: a decorate mode in the card dialog, 16 built-in SVG stickers, 6 tints, saved per account
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 - [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
+- [x] Trading: list a card with criteria for what you want back, offer matching cards, accept or decline, with escrow and no spoilers (see [Trading](#trading))
 
 ### Comeback events
 
@@ -67,6 +68,35 @@ is only a display.
 To run a new event, add an era with a new code and an `event` window (drawn art for MOONFLARE, photos for a real group, as
 for any era). Starlight Encore (`SE`, 20 Oct to 9 Nov 2026 KST) is the sample event. Retiring an event needs no change: it
 closes when its window ends. Don't delete or rename an event era once anyone owns its cards, since its card ids are save keys.
+
+### Trading
+
+`/trade` is a WTT board between players.
+
+- **A listing** offers one card and says what the lister wants back as **criteria**, never as specific cards:
+  a group, albums, members, rarities and foils (any of them left empty means "any"), plus how many cards (1 to 3).
+  The criteria must match at least one real card. Listings close after 7 days. A player can have 10 open at once.
+- **An offer** is exactly that many of your own cards that fit the criteria. The board shows which listings you can
+  fill, and the offer dialog only lists your cards that fit. One offer per listing per player, and up to 10 waiting.
+- **The lister accepts or declines.** Accepting swaps the cards and returns every other offer on that listing.
+  Listers can cancel a listing and offerers can withdraw an offer at any time; both give the cards back.
+  A listing past its date closes as expired and returns everything (checked whenever anyone loads the board or
+  trades, so it doesn't need a scheduled job).
+
+**No spoilers.** A card's art only shows on the trade board to a player who has that card in their binder. Everyone
+else sees the album's card back, marked "Face down", with the facts: group, album, member, rarity and foil. That
+applies to the lister too: offered cards they don't own stay face down until they accept. Once a trade lands the card
+is in your binder, so its art shows everywhere. Wants are criteria for the same reason, so nobody picks a card from
+the full catalog to ask for. The member is shown because it's what bias trading is about; the photo is the surprise.
+
+**Escrow.** Listing or offering a card takes that copy out of your binder straight away, and it sits in the listing
+or offer until the trade closes. A copy is always in exactly one place, so it can't be offered twice, and nothing can
+duplicate or lose it. The binder and NEW labels count only cards you hold. Reset collection first withdraws your
+listings and offers (returning the cards, and other players' offers on your listings), then erases.
+
+Every trade change is one Postgres function (`supabase/migrations/*_trading.sql`) that runs in a single transaction,
+locks the saves it touches, and bumps their `version`. The Server Actions in `app/actions/trade.js` check the player
+and validate cards and criteria against the catalog (`lib/trade.js`) before calling them with the secret key.
 
 ### Real groups
 
@@ -138,7 +168,8 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 - `lib/events.js` has the comeback-event helpers (`eventPhase`, `canOpenEra`, countdown text), tested in `tests/events.test.js`. `components/EventBanner.jsx` is the banner and countdown badge; `lib/useNow.js` ticks the clock for them.
 - `lib/art.js` draws MOONFLARE's card art on canvas, and returns the photo URL for real groups' cards and covers.
 - `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (open an album, claim the daily stars, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
-- `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`.
+- `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`. The trade tables (`trade_listings`, `trade_offers`) have no client grants at all: the board is read on the server.
+- `/trade` is `components/TradeBoard.jsx` (tabs for the board, your listings, your offers and history), with `ListCardDialog.jsx`, `MakeOfferDialog.jsx` and `TradeCardThumb.jsx` (the face-down rule). `lib/trade.js` has the criteria and matching rules, tested in `tests/trade.test.js`; `lib/supabase/trades.js` reads the board; `app/actions/trade.js` holds the actions.
 
 ## Notes
 

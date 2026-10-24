@@ -131,7 +131,8 @@ export default function Collection() {
             <AlertDialogHeader>
               <AlertDialogTitle>Erase your whole collection?</AlertDialogTitle>
               <AlertDialogDescription>
-                Every card, your stars and your pity progress are deleted from your account. You start again with {NEW_GAME.coins} stars.
+                Every card, your stars and your pity progress are deleted from your account, and your trade listings and offers are
+                withdrawn. You start again with {NEW_GAME.coins} stars.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
