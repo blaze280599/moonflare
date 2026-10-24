@@ -117,7 +117,7 @@ export default function Collection() {
         </div>
       </div>
 
-      <Binder era={binderEra} onEraChange={setBinderEra} owned={state.owned} artReady={artReady} onInspect={inspect} />
+      <Binder era={binderEra} onEraChange={setBinderEra} owned={state.owned} deco={state.deco || {}} artReady={artReady} onInspect={inspect} />
 
       <div className="mx-auto max-w-6xl px-4 pb-12">
         <AlertDialog>

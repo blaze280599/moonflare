@@ -53,6 +53,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
 | `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
 | `app/actions/game.js` | Server Actions that change a save: `openPack`, `setBias`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
+| `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `saveToploader`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
 | `supabase/migrations/` | Database schema: `profiles`, `saves`, RLS, the new-user trigger. Apply new migrations through the Supabase MCP server or CLI, and commit the SQL |
 | `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
@@ -68,12 +69,16 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/OpeningStage.jsx` | Full-screen album opening: tear the 3D pack, cards slide out into a stack, flip and swipe each one, then a spread of all five |
 | `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, click-and-drag cutting along the line, grab to turn it (it barely moves), springs, the flying strip and glitter |
 | `components/InspectModal.jsx` | Card detail dialog: foil picker, flip, try-your-own-photo |
-| `components/Binder.jsx` | Collection grid with an era picker |
+| `components/Binder.jsx` | Collection grid with an era picker; decorated cards show in their toploader |
+| `components/Toploader.jsx` | A card in a toploader with its stickers (plain DOM, no WebGL) |
+| `components/ToploaderEditor.jsx` | Decorate mode inside the card dialog: add, drag, resize/turn (round handle), tint, save |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
 | `components/ui/` | shadcn components. Add new ones with the CLI rather than hand-writing them |
 | `lib/cards.js` | Card catalog (groups, members, eras, variants), rarity table, `foilFor()` |
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
 | `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
+| `lib/stickers.js` | Built-in sticker set (SVG in code, as data URLs) and toploader tints |
+| `lib/deco.js` | Toploader rules: `sanitizeToploader`, `applyToploader` (owned cards only, caps, clamps), `toploaderFor` |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
 | `lib/events.js` | Comeback-event helpers: `eventPhase`, `canOpenEra`, `msUntilChange`, `formatCountdown` |
 | `lib/useNow.js` | `useNow(ms)`: a ticking clock for countdowns |
@@ -134,6 +139,8 @@ These have all bitten us before. Read them before touching the related code.
 - **The bias boost picks the member, never the rarity.** `pickCard()` in `lib/gacha.js` gives the bias `BIAS_BOOST` (2) extra percentage points of each member rarity and uses one `rng()` call either way, so rarity odds, pity and refunds are unchanged and rolls without a bias are identical to before. The user's hard limit is 1–2 points; `tests/gacha.test.js` enforces it. Show odds through `memberRates()`, never hand-computed numbers. `saves.bias` is `{ groupCode: memberCode }`; Reset keeps it.
 - **Comeback events are eras with a window.** An event album is an `ERAS` entry with `event: { starts, ends, blurb }` (ISO strings with an offset). The server decides: `openPack` refuses it outside the window with `event_closed`, using `Date.now()` on the server. Pages filter out `upcoming` eras with `eventPhase()` and show ended ones as closed; never drop an ended event's era, its card ids are save keys. Countdown text comes from `useNow()`, which starts from the render's own clock, so the phase matches between server and client but the seconds don't: keep `suppressHydrationWarning` on the countdown text. Drawn art keys palettes on era codes in `lib/art.js` (`PM`, `NB`, `SE`); a new MOONFLARE event era falls back to the Neon Bloom background unless you add one.
 - **Sound needs a gesture.** Browsers block audio until the player presses something, so the stage calls `unlockAudio()` from `onPointerDownCapture` / `onKeyDownCapture`. Every `play*` in `lib/sound.js` is silent until then and while sound is off, and no `AudioContext` is created while it's off. The rip is driven by `onRip(speed)` from `PackScene.grow()` (where the cut extends), and `lib/sound.js` throttles the grains. Sounds aren't skipped for reduced motion; the sparkle is.
+- **Toploader decorations** live in `saves.deco` (card id → `{ t: tint, s: [{ id, x, y, k, r }] }`, positions as fractions of the toploader). Sticker and tint ids are save keys like era codes: never rename or remove one in `lib/stickers.js`, add new ones. The server re-cleans everything through `applyToploader`; a plain clear toploader removes the entry. Decorations on a card the player no longer owns stay stored but are hidden (`toploaderFor`), and Reset clears them (`NEW_GAME.deco`). Decorate mode replaces the dialog's HoloCard rather than adding a canvas, and the binder draws toploaders with `<img>` only.
+- **Dragging stickers:** the editor uses pointer events with `setPointerCapture` and `touch-action: none` on the stage, so mouse and touch share one path. Stickers render in a fixed (uid) order and stack by z-index: reordering DOM nodes mid-drag drops pointer capture. `pointerdown` calls `preventDefault`, so the sticker is focused by hand to keep keyboard controls working after a click.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change

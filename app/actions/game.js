@@ -3,6 +3,7 @@
 import { getRandomValues } from 'node:crypto';
 import { ERAS, GROUPS } from '@/lib/cards';
 import { canOpenEra } from '@/lib/events';
+import { applyToploader } from '@/lib/deco';
 import { DAILY_STARS, PACK_COST, rollPack } from '@/lib/gacha';
 import { dateInZone, isTimeZone, mergeImport, resetState, rowToState, sanitizeImport, stateToRow } from '@/lib/save';
 import { adminConfigured, createAdminClient } from '@/lib/supabase/admin';
@@ -117,6 +118,12 @@ export async function skipLocalImport() {
       local_import_at: new Date().toISOString()
     })
   );
+}
+
+// Saves one card's toploader (tint and stickers), or removes it when it's plain. lib/deco.js cleans the input
+// and checks the player owns the card.
+export async function saveToploader(cardId, toploader) {
+  return withPlayer(player => updateSave(player.id, state => applyToploader(state, cardId, toploader)));
 }
 
 // Players from before timezones were stored have none. Their browser fills it in once; after that it's fixed,
