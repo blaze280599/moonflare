@@ -14,7 +14,7 @@ export default function SiteFooter() {
           </div>
           <p>
             MOONFLARE is a made-up group. LE SSERAFIM photos load from the K-pop Fandom wiki; this is a fan project, not affiliated
-            with Source Music or HYBE. Your collection saves in this browser only.
+            with Source Music or HYBE. Your collection is saved to your account.
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-start">

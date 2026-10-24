@@ -36,7 +36,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
 - **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password, invite-only sign-up. See README, "Run it", for setup.
-- **Persistence:** `localStorage` only, through `lib/useGame.js`, not yet per account. Server saves and trading (Supabase) are planned but not built.
+- **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username and time zone), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading is planned but not built.
 
 ## Project map
 
@@ -51,10 +51,13 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/auth/actions.js` | Server Actions: `logIn`, `signUp` (checks the invite code), `signOut` |
 | `app/auth/confirm/route.js` | Where the confirmation email's link lands; starts the session |
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
-| `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`), `middleware.js`, `safe-next.js` |
+| `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
+| `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
+| `supabase/migrations/` | Database schema: `profiles`, `saves`, RLS, the new-user trigger. Apply new migrations through the Supabase MCP server or CLI, and commit the SQL |
 | `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
-| `components/GameProvider.jsx` | Context shared by every page: `useGame()`, `artReady`, the card dialog (`inspect`) and the binder's chosen album |
+| `components/GameProvider.jsx` | Context shared by every page: `useGame(initial)`, `artReady`, the card dialog (`inspect`) and the binder's chosen album |
+| `components/LocalSaveImport.jsx` | One-time dialog offering to bring a browser's pre-account localStorage save into the account |
 | `components/SiteHeader.jsx` | Sticky nav bar: shadcn NavigationMenu with a Groups dropdown, stars + daily button (ButtonGroup); a Sheet menu below `md` |
 | `components/SiteFooter.jsx` | Disclaimer and footer links |
 | `components/Landing.jsx` | Landing page: hero HoloCard, how it works, groups, rarity tiers |
@@ -71,7 +74,8 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
 | `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
-| `lib/useGame.js` | Game state hook and localStorage save |
+| `lib/useGame.js` | Client game state: starts from the server's save, calls the Server Actions, adopts the state they return |
+| `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
 | `tests/` | Unit tests for game logic (`npm test`) |
 | `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, booster pack wrappers (`getPackArt`, `PACK`), photo cropping |
 | `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
@@ -97,9 +101,12 @@ These have all bitten us before. Read them before touching the related code.
 - **HoloCard has local changes**, each marked with a comment: a controlled `flipped` prop, an `onClick` prop, starting face-down without animating, and `loseContext()` on unmount. If you update it from React Bits, re-apply all four.
 - **HoloCard's `width` prop sets `--hc-w` inline**, which beats CSS. Set responsive widths by passing `style={{ '--hc-w': 'clamp(...)' }}`.
 - **Card art needs fonts and the browser.** `lib/art.js` draws on canvas using Google Fonts by family name, so fonts are loaded with a plain `<link>` in `layout.js`, not `next/font` (which renames families). Only call `getArt` / `getBack` / `getCover` after `loadArtFonts()` resolves on the client; `GameProvider` exposes `artReady`, and every page gates card art on it. Calling them during server render will crash.
-- **Game state lives in a ref too.** `useGame` keeps `stateRef` in sync through `commit()`, so two actions in the same tick (a double-tapped "Open another") each build on the latest state. Always change state through `commit()`, never a bare `setState`.
-- **Daily reward uses the player's local date** (`toLocaleDateString('en-CA')`), and `useGame` re-checks the date every minute and on tab focus so the button unlocks after midnight without a reload.
-- **Hydration:** game state loads from localStorage after mount (`loaded` flag in `useGame`). Don't read localStorage during render.
+- **Game state lives in a ref too.** `useGame` keeps `stateRef` in sync through `commit()`. Always change state through `commit()`, never a bare `setState`. Server Actions run one at a time through `run()` (a promise queue), so a double-tapped "Open another" can't apply two answers out of order.
+- **Rolls happen only in Server Actions.** Never roll, add stars or edit `owned` in the browser; the client just adopts the `state` an action returns. Each action checks the player with `getPlayer()` and writes with `update … where version = <read version>`, retrying once (`updateSave` in `app/actions/game.js`). Add new save changes the same way.
+- **The secret key stays on the server.** `lib/supabase/admin.js` imports `server-only` and bypasses RLS. Only import it from Server Actions or other server code that has already checked who's asking, and never name the env var `NEXT_PUBLIC_…`. Clients get `select` on their own rows and no write grants; keep it that way when adding tables (this project doesn't expose new tables automatically, so grant explicitly), and run the Supabase security advisors after any schema change.
+- **Daily reward uses the profile's time zone** (`profiles.timezone`, an IANA name set at sign-up from a hidden field). It's set once: older accounts have none until their browser fills it in through `setTimeZone`, which only writes when it's empty, so nobody can hop zones for a second reward. Reset keeps `last_daily` for the same reason.
+- **The daily button re-checks the date** every minute and on tab focus (`useGame`), so it unlocks after midnight without a reload. The server decides; the button is only a hint.
+- **Hydration:** the save arrives from the server with the page, so `loaded` is true on first render unless it couldn't be read. Don't read localStorage during render (only `LocalSaveImport` reads it, in an effect).
 - **Tailwind source scanning:** `globals.css` uses `@import "tailwindcss" source("..")`. Without it, Tailwind scans the dev server's working folder, which may not be the project, and most utilities disappear.
 - **Stale CSS after config changes:** if styles look wrong after changing PostCSS or Tailwind config, stop the dev server, delete `.next/` and restart.
 - **Don't build while the dev server runs.** Both use `.next/`, and `npm run build` then fails with `Invariant: no direct app page entry found for /_not-found`. Stop the dev server, delete `.next/`, and build again.
@@ -108,7 +115,7 @@ These have all bitten us before. Read them before touching the related code.
 - **The in-app browser pane throttles animation when hidden.** requestAnimationFrame barely runs while the preview pane is hidden, so the pack can look frozen mid-swing in screenshots. Take another screenshot (it wakes the page) before assuming it's broken.
 - **Stacking order:** the opening stage is `z-40`, and shadcn dialogs and their overlays are `z-50`, so the card dialog opens on top of the stage. Keep it that way.
 - **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-lesserafim.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
-- **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are stored in players' localStorage, so never rename an era or member code. Add new ones instead.
+- **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are keys in `saves.owned` (and in old localStorage saves), so never rename an era or member code. Add new ones instead.
 - **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. Re-run `npm run photos:lesserafim`; `tests/cards.test.js` only checks that URLs exist, not that they load.
 - **One provider, many pages.** Game state lives in `GameProvider` (mounted in `app/(game)/layout.js`), so it survives client-side navigation. Read it with `useGameContext()`; never call `useGame()` in a page, or that page gets its own copy of the save and the two drift apart. The card dialog is rendered by the provider, so any page can open it with `inspect(card)`.
 - **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. The nav lists groups in the NavigationMenu's Groups dropdown and under a Groups heading in the phone Sheet.
@@ -116,7 +123,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Trust `getClaims()`, not `getSession()`, on the server.** `getClaims()` verifies the session token; `getSession()` just reads the cookie, which the visitor controls. `getPlayer()` in `lib/supabase/server.js` wraps it.
 - **Sign-up is invite-only.** `SIGNUP_INVITE_CODE` is checked in the `signUp` Server Action; an empty value turns sign-up off. The username is stored in Supabase `user_metadata` for now (a `profiles` table comes with server saves).
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
-- **The save isn't per account yet.** Signing in gates the game, but `useGame` still reads one localStorage save per browser. Two people signing in on the same browser share it until saves move to Supabase.
+- **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
@@ -131,7 +138,7 @@ Do all of these before committing. Nobody else will.
    - Open a revealed card in the dialog, switch foils, flip it, then press Escape. The dialog should close and the stage should stay open.
    - Close the stage, or use **Go to binder**, which should land on `/collection` showing that album. Check the binder updated and open a binder card.
    - Click every nav link (desktop and the phone-width menu) and check the active link is highlighted.
-   - Reload the page and confirm stars, cards and pity persist.
+   - Reload the page and confirm stars, cards and pity persist. Check the `saves` row changed too (Supabase MCP `execute_sql`, or the Table Editor).
 4. Check a phone-width viewport (about 375px wide) for overflow or clipped text.
 5. If you changed odds or the economy, check the numbers in the UI match `lib/gacha.js`, and that pity still forces a Legendary on the 15th dry album.
 
@@ -148,7 +155,7 @@ If you can't verify something (no browser available, say), state that in the com
 
 The README's Direction section lists planned features. Notes for the likely next ones:
 
-- **Real accounts and trading** → Supabase (auth, inventories, trades), deployed on Vercel. Swap `lib/useGame.js` for a server-backed hook with the same return shape, so components don't change. Rolls must happen server-side once inventories are shared, or players can cheat.
+- **Trading** → Supabase (a trades table, written only by Server Actions like the save), deployed on Vercel. Move cards between two saves in one transaction (a Postgres function called with the secret key) so neither side can lose a card on a clash.
 - **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
 - **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.

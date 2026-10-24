@@ -37,7 +37,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 ### Tech stack
 
 - **Prototype:** a single HTML page with the foil shader, card flips and confetti. Kept in `prototype/`.
-- **Full website:** Next.js (this repo), with Supabase for accounts (built) and, next, inventories and trades, hosted on Vercel.
+- **Full website:** Next.js (this repo), with Supabase for accounts and per-account saves (built) and, next, trades, hosted on Vercel.
 - **Game feel:** the pack is a real 3D object built with three.js (`lib/pack3d.js`), cut open by pressing on the dotted line near its top and dragging along it, in the spirit of Pokémon TCG Pocket. Planned: Howler.js for the rip of the pack and the sparkle of a rare card.
 
 ### MVP (version 1)
@@ -48,8 +48,8 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
 - [x] Accounts: invite-only sign-up, log in and sign out (Supabase Auth). Every game page needs a signed-in player
-- [ ] Saves on the server, per account, with album rolls done server-side (until then the save still lives in the browser, shared by anyone who signs in on it)
-- [ ] Daily free pack, saved in localStorage (the build gives 300 daily stars instead, enough for 3 albums, resetting at the player's local midnight)
+- [x] Saves on the server, per account (Supabase `saves` table), with every album roll, daily claim and reset done in Server Actions. A browser's old localStorage save can be brought into an account once
+- [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 
 ### Real groups
 
@@ -71,9 +71,12 @@ for licensed art or player-uploaded photos first.
 Needs Node.js 18.18 or newer, and a Supabase project for sign-in (the free tier is plenty).
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key (Project Settings → API Keys),
-   plus an invite code of your choice. Anyone signing up has to type it.
-3. In the Supabase dashboard, under Authentication → URL Configuration, set the Site URL to `http://localhost:3000`
+2. Copy `.env.example` to `.env.local` and fill in the project URL, the publishable key and the secret key
+   (Project Settings → API Keys), plus an invite code of your choice. Anyone signing up has to type it.
+   The secret key is for the server only: never give it a `NEXT_PUBLIC_` prefix or commit it.
+3. Apply the SQL in `supabase/migrations/` in order (SQL Editor, or `supabase db push` with the CLI). It creates the
+   `profiles` and `saves` tables, their row-level security, and the trigger that gives every new account a save.
+4. In the Supabase dashboard, under Authentication → URL Configuration, set the Site URL to `http://localhost:3000`
    (your real domain once deployed) and add `http://localhost:3000/auth/confirm` to the redirect URLs.
 
 ```bash
@@ -110,7 +113,8 @@ in the browser that signed up. To make it work on any device, change the templat
 - `lib/gacha.js` holds pull rates, pity and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns about half its cost.
 - `tests/gacha.test.js` covers the odds, pity and economy. Run it with `npm test`.
 - `lib/art.js` draws MOONFLARE's card art on canvas, and returns the photo URL for real groups' cards and covers.
-- `lib/useGame.js` saves progress to localStorage.
+- `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (open an album, claim the daily stars, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
+- `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`.
 
 ## Notes
 
