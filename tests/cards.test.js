@@ -28,3 +28,7 @@ test('MOONFLARE cards keep drawn art', () => {
   const moonflare = GROUPS.find(g => g.code === 'MF');
   assert.ok(CARDS.filter(c => c.era.group === moonflare).every(c => !c.photo));
 });
+
+test('era codes are unique', () => {
+  assert.equal(new Set(ERAS.map(e => e.code)).size, ERAS.length);
+});
