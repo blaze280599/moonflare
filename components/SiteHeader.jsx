@@ -2,15 +2,25 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Check, Gift, Menu, MoonStar, Star } from 'lucide-react';
+import { useTransition } from 'react';
+import { Check, CircleUser, Gift, LogOut, Menu, MoonStar, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getCover } from '@/lib/art';
 import { DAILY_STARS, PACK_COST } from '@/lib/gacha';
+import { signOut } from '@/app/auth/actions';
 import { useGameContext } from '@/components/GameProvider';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -29,8 +39,10 @@ const isActive = (pathname, href) => (href === '/' ? pathname === '/' : pathname
 
 const groupHref = g => `/groups/${g.slug}`;
 
-export default function SiteHeader() {
+export default function SiteHeader({ player }) {
   const pathname = usePathname();
+  const [signingOut, startSignOut] = useTransition();
+  const onSignOut = () => startSignOut(() => signOut());
   const { state, loaded, artReady, claimDaily, dailyClaimed } = useGameContext();
 
   const onDaily = () => {
@@ -95,6 +107,25 @@ export default function SiteHeader() {
             </Button>
           </ButtonGroup>
 
+          {player && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="lg" className="max-w-40 px-2 max-md:hidden" aria-label={`Account: ${player.username}`}>
+                  <CircleUser />
+                  <span className="truncate">{player.username}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{player.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={signingOut} onSelect={onSignOut}>
+                  <LogOut />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon-lg" className="md:hidden" aria-label="Open menu">
@@ -123,7 +154,17 @@ export default function SiteHeader() {
                   Collection
                 </MobileLink>
               </nav>
-              <p className="mt-auto px-4 pb-4 text-xs text-muted-foreground">
+              {player && (
+                <div className="mt-auto grid gap-1 px-2">
+                  <Separator className="mb-2" />
+                  <p className="truncate px-3 text-xs text-muted-foreground">Signed in as {player.username}</p>
+                  <Button variant="ghost" size="lg" className="justify-start text-muted-foreground" disabled={signingOut} onClick={onSignOut}>
+                    <LogOut />
+                    Sign out
+                  </Button>
+                </div>
+              )}
+              <p className={cn('px-4 pb-4 text-xs text-muted-foreground', !player && 'mt-auto')}>
                 {DAILY_STARS} free stars every day. Albums cost {PACK_COST} ★.
               </p>
             </SheetContent>

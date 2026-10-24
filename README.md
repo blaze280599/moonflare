@@ -37,7 +37,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 ### Tech stack
 
 - **Prototype:** a single HTML page with the foil shader, card flips and confetti. Kept in `prototype/`.
-- **Full website:** Next.js (this repo), with Supabase planned for accounts, inventories and trades, hosted on Vercel.
+- **Full website:** Next.js (this repo), with Supabase for accounts (built) and, next, inventories and trades, hosted on Vercel.
 - **Game feel:** the pack is a real 3D object built with three.js (`lib/pack3d.js`), cut open by pressing on the dotted line near its top and dragging along it, in the spirit of Pokémon TCG Pocket. Planned: Howler.js for the rip of the pack and the sparkle of a rare card.
 
 ### MVP (version 1)
@@ -47,6 +47,8 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Album opening: a 3D foil booster pack you cut open by click-dragging along its cut line (and can grab to turn it around), then a one-by-one card reveal
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
+- [x] Accounts: invite-only sign-up, log in and sign out (Supabase Auth). Every game page needs a signed-in player
+- [ ] Saves on the server, per account, with album rolls done server-side (until then the save still lives in the browser, shared by anyone who signs in on it)
 - [ ] Daily free pack, saved in localStorage (the build gives 300 daily stars instead, enough for 3 albums, resetting at the player's local midnight)
 
 ### Real groups
@@ -66,14 +68,25 @@ for licensed art or player-uploaded photos first.
 
 ## Run it
 
-Needs Node.js 18.18 or newer.
+Needs Node.js 18.18 or newer, and a Supabase project for sign-in (the free tier is plenty).
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key (Project Settings → API Keys),
+   plus an invite code of your choice. Anyone signing up has to type it.
+3. In the Supabase dashboard, under Authentication → URL Configuration, set the Site URL to `http://localhost:3000`
+   (your real domain once deployed) and add `http://localhost:3000/auth/confirm` to the redirect URLs.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Then open http://localhost:3000. Without the env vars every page redirects to `/login`, which says what's missing.
+
+Confirmation emails come from Supabase's built-in mailer, which only sends a few an hour. That's fine for a
+private club; add your own SMTP under Authentication → Emails if it isn't. The default email's link only works
+in the browser that signed up. To make it work on any device, change the template's link to
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
 
 ## UI stack
 

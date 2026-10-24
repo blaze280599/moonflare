@@ -35,16 +35,24 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **HoloCard** (React Bits, WebGL2) for every card that shows foil.
 - **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
-- **Persistence:** `localStorage` only, through `lib/useGame.js`. Accounts and trading (Supabase) are planned but not built.
+- **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password, invite-only sign-up. See README, "Run it", for setup.
+- **Persistence:** `localStorage` only, through `lib/useGame.js`, not yet per account. Server saves and trading (Supabase) are planned but not built.
 
 ## Project map
 
 | Path | What it is |
 |---|---|
-| `app/layout.js` | Root layout: Google Fonts link, `<html class="dark">`, TooltipProvider, GameProvider, header, footer, Toaster |
-| `app/page.js` | `/`: the landing page (`components/Landing.jsx`) |
-| `app/groups/[slug]/page.js` | `/groups/<slug>`: one group's albums (`components/GroupPage.jsx`). Static params from `GROUPS` |
-| `app/collection/page.js` | `/collection`: album progress, the binder and Reset (`components/Collection.jsx`) |
+| `app/layout.js` | Root layout: Google Fonts link, `<html class="dark">`, TooltipProvider, Toaster |
+| `app/(game)/layout.js` | Layout for every game page: reads the signed-in player, GameProvider, header, footer. `force-dynamic` |
+| `app/(game)/page.js` | `/`: the landing page (`components/Landing.jsx`) |
+| `app/(game)/groups/[slug]/page.js` | `/groups/<slug>`: one group's albums (`components/GroupPage.jsx`). Params from `GROUPS` |
+| `app/(game)/collection/page.js` | `/collection`: album progress, the binder and Reset (`components/Collection.jsx`) |
+| `app/(auth)/` | `/login` and `/signup` with their own centered layout (no game header). Forms are `components/LoginForm.jsx` and `SignupForm.jsx` |
+| `app/auth/actions.js` | Server Actions: `logIn`, `signUp` (checks the invite code), `signOut` |
+| `app/auth/confirm/route.js` | Where the confirmation email's link lands; starts the session |
+| `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
+| `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`), `middleware.js`, `safe-next.js` |
+| `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
 | `components/GameProvider.jsx` | Context shared by every page: `useGame()`, `artReady`, the card dialog (`inspect`) and the binder's chosen album |
 | `components/SiteHeader.jsx` | Sticky nav bar: shadcn NavigationMenu with a Groups dropdown, stars + daily button (ButtonGroup); a Sheet menu below `md` |
@@ -102,8 +110,13 @@ These have all bitten us before. Read them before touching the related code.
 - **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-lesserafim.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
 - **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are stored in players' localStorage, so never rename an era or member code. Add new ones instead.
 - **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. Re-run `npm run photos:lesserafim`; `tests/cards.test.js` only checks that URLs exist, not that they load.
-- **One provider, many pages.** Game state lives in `GameProvider` (mounted in `app/layout.js`), so it survives client-side navigation. Read it with `useGameContext()`; never call `useGame()` in a page, or that page gets its own copy of the save and the two drift apart. The card dialog is rendered by the provider, so any page can open it with `inspect(card)`.
+- **One provider, many pages.** Game state lives in `GameProvider` (mounted in `app/(game)/layout.js`), so it survives client-side navigation. Read it with `useGameContext()`; never call `useGame()` in a page, or that page gets its own copy of the save and the two drift apart. The card dialog is rendered by the provider, so any page can open it with `inspect(card)`.
 - **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. The nav lists groups in the NavigationMenu's Groups dropdown and under a Groups heading in the phone Sheet.
+- **Every page is private by default.** The middleware lets signed-out visitors reach only `/login`, `/signup` and `/auth/*` (`PUBLIC` in `lib/supabase/middleware.js`). A new page is gated automatically; add it to `PUBLIC` only on purpose. If the Supabase env vars are missing, nobody gets in (fail closed).
+- **Trust `getClaims()`, not `getSession()`, on the server.** `getClaims()` verifies the session token; `getSession()` just reads the cookie, which the visitor controls. `getPlayer()` in `lib/supabase/server.js` wraps it.
+- **Sign-up is invite-only.** `SIGNUP_INVITE_CODE` is checked in the `signUp` Server Action; an empty value turns sign-up off. The username is stored in Supabase `user_metadata` for now (a `profiles` table comes with server saves).
+- **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
+- **The save isn't per account yet.** Signing in gates the game, but `useGame` still reads one localStorage save per browser. Two people signing in on the same browser share it until saves move to Supabase.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change

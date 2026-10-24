@@ -1,9 +1,6 @@
 import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
-import { GameProvider } from '@/components/GameProvider';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = {
   title: { default: 'Moonflare Photocard Club', template: '%s · Moonflare' },
@@ -17,6 +14,7 @@ export const viewport = {
   themeColor: '#262624'
 };
 
+// The game's header, footer and save live in app/(game)/layout.js; /login and /signup use app/(auth)/layout.js.
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
@@ -31,15 +29,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <TooltipProvider>
-          <GameProvider>
-            <div className="flex min-h-dvh flex-col">
-              <SiteHeader />
-              <main className="flex-1">{children}</main>
-              <SiteFooter />
-            </div>
-          </GameProvider>
-        </TooltipProvider>
+        <TooltipProvider>{children}</TooltipProvider>
         <Toaster theme="dark" position="bottom-center" />
       </body>
     </html>
