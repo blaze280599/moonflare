@@ -6,10 +6,10 @@ test('card ids are unique', () => {
   assert.equal(new Set(CARDS.map(c => c.id)).size, CARDS.length);
 });
 
-test('every era has 21 cards covering every rarity', () => {
+test('every era has four cards per member plus a group special, covering every rarity', () => {
   for (const era of ERAS) {
     const cards = CARDS.filter(c => c.era === era);
-    assert.equal(cards.length, 21, era.name);
+    assert.equal(cards.length, era.group.members.length * 4 + 1, era.name);
     for (const r of Object.keys(RARITY)) assert.ok(cards.some(c => c.rarity === r), `${era.name} has no ${r}`);
   }
 });
@@ -33,4 +33,12 @@ test('retired MOONFLARE codes stay unused', () => {
 
 test('era codes are unique', () => {
   assert.equal(new Set(ERAS.map(e => e.code)).size, ERAS.length);
+});
+
+// lib/trade.js looks members up by code alone, across every group.
+test('group and member codes are unique across groups', () => {
+  assert.equal(new Set(GROUPS.map(g => g.code)).size, GROUPS.length);
+  assert.equal(new Set(GROUPS.map(g => g.slug)).size, GROUPS.length);
+  const members = GROUPS.flatMap(g => g.members.map(m => m.code));
+  assert.equal(new Set(members).size, members.length);
 });

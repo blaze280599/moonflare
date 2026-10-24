@@ -31,8 +31,9 @@ const title = s => {
 };
 
 // Gallery lines look like `File name.png|''[[Album page|Label]]'' (3)`. Editors also write singles in
-// quotes (`"[[Page|Label]]"`) or leave the link bare, so accept all three. Returns { albumPage: [file, ...] }.
-const CAPTION = /^\s*([^|]+?\.(?:png|jpe?g|webp|gif))\s*\|\s*(?:''|["“])?\s*\[\[([^\]|#]+)/i;
+// quotes (`"[[Page|Label]]"`) or leave the link bare, so accept all three. GIFs are left out: they're
+// animated teasers, and a card would only show their first frame. Returns { albumPage: [file, ...] }.
+const CAPTION = /^\s*([^|]+?\.(?:png|jpe?g|webp))\s*\|\s*(?:''|["“])?\s*\[\[([^\]|#]+)/i;
 
 async function galleryByAlbum(page) {
   const { parse, error } = await api({ action: 'parse', page, prop: 'wikitext' });
