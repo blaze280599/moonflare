@@ -35,7 +35,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **HoloCard** (React Bits, WebGL2) for every card that shows foil.
 - **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
-- **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password, invite-only sign-up. See README, "Run it", for setup.
+- **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password; anyone who can reach the site can sign up. See README, "Run it", for setup.
 - **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username and time zone), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading is planned but not built.
 
 ## Project map
@@ -48,7 +48,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/(game)/groups/[slug]/page.js` | `/groups/<slug>`: one group's albums (`components/GroupPage.jsx`). Params from `GROUPS` |
 | `app/(game)/collection/page.js` | `/collection`: album progress, the binder and Reset (`components/Collection.jsx`) |
 | `app/(auth)/` | `/login` and `/signup` with their own centered layout (no game header). Forms are `components/LoginForm.jsx` and `SignupForm.jsx` |
-| `app/auth/actions.js` | Server Actions: `logIn`, `signUp` (checks the invite code), `signOut` |
+| `app/auth/actions.js` | Server Actions: `logIn`, `signUp` (validates the form, rejects taken usernames, sends the time zone), `signOut` |
 | `app/auth/confirm/route.js` | Where the confirmation email's link lands; starts the session |
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
 | `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
@@ -121,7 +121,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. The nav lists groups in the NavigationMenu's Groups dropdown and under a Groups heading in the phone Sheet.
 - **Every page is private by default.** The middleware lets signed-out visitors reach only `/login`, `/signup` and `/auth/*` (`PUBLIC` in `lib/supabase/middleware.js`). A new page is gated automatically; add it to `PUBLIC` only on purpose. If the Supabase env vars are missing, nobody gets in (fail closed).
 - **Trust `getClaims()`, not `getSession()`, on the server.** `getClaims()` verifies the session token; `getSession()` just reads the cookie, which the visitor controls. `getPlayer()` in `lib/supabase/server.js` wraps it.
-- **Sign-up is invite-only.** `SIGNUP_INVITE_CODE` is checked in the `signUp` Server Action; an empty value turns sign-up off. The username is stored in Supabase `user_metadata` for now (a `profiles` table comes with server saves).
+- **Sign-up is open.** There's no invite code (removed on purpose): anyone who can reach the site can make an account, so keep it private (see Stack). The username and time zone go in `user_metadata`, and the `on_auth_user_created` trigger copies them into `profiles`.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.

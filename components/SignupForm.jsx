@@ -46,7 +46,7 @@ export default function SignupForm({ configured }) {
     <Card>
       <CardHeader>
         <CardTitle>Sign up</CardTitle>
-        <CardDescription>Moonflare is invite-only. Ask the club for a code.</CardDescription>
+        <CardDescription>Make an account to open albums and keep your collection.</CardDescription>
       </CardHeader>
       <CardContent>
         {!configured && <NotConfigured />}
@@ -84,11 +84,6 @@ export default function SignupForm({ configured }) {
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} aria-invalid={Boolean(errors.password)} />
               {errors.password ? <FieldError>{errors.password}</FieldError> : <FieldDescription>At least 8 characters.</FieldDescription>}
-            </Field>
-            <Field data-invalid={Boolean(errors.invite)}>
-              <FieldLabel htmlFor="invite">Invite code</FieldLabel>
-              <Input id="invite" name="invite" autoComplete="off" required aria-invalid={Boolean(errors.invite)} />
-              {errors.invite && <FieldError>{errors.invite}</FieldError>}
             </Field>
             <Field>
               <Button type="submit" size="lg" disabled={pending || !configured}>

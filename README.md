@@ -47,7 +47,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Album opening: a 3D foil booster pack you cut open by click-dragging along its cut line (and can grab to turn it around), then a one-by-one card reveal
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
-- [x] Accounts: invite-only sign-up, log in and sign out (Supabase Auth). Every game page needs a signed-in player
+- [x] Accounts: sign up, log in and sign out (Supabase Auth). Every game page needs a signed-in player
 - [x] Saves on the server, per account (Supabase `saves` table), with every album roll, daily claim and reset done in Server Actions. A browser's old localStorage save can be brought into an account once
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 
@@ -72,7 +72,7 @@ Needs Node.js 18.18 or newer, and a Supabase project for sign-in (the free tier 
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Copy `.env.example` to `.env.local` and fill in the project URL, the publishable key and the secret key
-   (Project Settings → API Keys), plus an invite code of your choice. Anyone signing up has to type it.
+   (Project Settings → API Keys).
    The secret key is for the server only: never give it a `NEXT_PUBLIC_` prefix or commit it.
 3. Apply the SQL in `supabase/migrations/` in order (SQL Editor, or `supabase db push` with the CLI). It creates the
    `profiles` and `saves` tables, their row-level security, and the trigger that gives every new account a save.

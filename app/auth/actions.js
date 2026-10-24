@@ -1,6 +1,5 @@
 'use server';
 
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -11,13 +10,6 @@ import { safeNext } from '@/lib/supabase/safe-next';
 
 const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
 const NOT_SET_UP = 'Sign-in isn’t set up on this site yet.';
-
-// Hashing first gives both sides the same length, which timingSafeEqual needs.
-const digest = s => createHash('sha256').update(s).digest();
-const inviteMatches = code => {
-  const expected = process.env.SIGNUP_INVITE_CODE;
-  return Boolean(expected) && timingSafeEqual(digest(code), digest(expected));
-};
 
 const field = (formData, name) => String(formData.get(name) ?? '').trim();
 
@@ -50,7 +42,6 @@ export async function signUp(_prev, formData) {
   const username = field(formData, 'username');
   const email = field(formData, 'email');
   const password = String(formData.get('password') ?? '');
-  const invite = field(formData, 'invite');
   // Filled by the browser. The daily reward resets at midnight in this zone; a bad value just leaves it unset.
   const timeZone = field(formData, 'timezone');
   const values = { username, email };
@@ -60,7 +51,6 @@ export async function signUp(_prev, formData) {
   if (!USERNAME.test(username)) errors.username = 'Use 3–20 letters, numbers or underscores.';
   if (!/^\S+@\S+\.\S+$/.test(email)) errors.email = 'Enter a valid email.';
   if (password.length < 8) errors.password = 'Use at least 8 characters.';
-  if (!inviteMatches(invite)) errors.invite = 'That invite code isn’t right.';
   if (!errors.username && (await usernameTaken(username))) errors.username = 'That username is taken.';
   if (Object.keys(errors).length) return { errors, values };
 

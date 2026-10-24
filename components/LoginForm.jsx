@@ -48,7 +48,7 @@ export default function LoginForm({ next, confirmFailed, configured }) {
               <FieldDescription className="text-center">
                 New here?{' '}
                 <Link href="/signup" className="underline underline-offset-4">
-                  Sign up with an invite code
+                  Sign up
                 </Link>
               </FieldDescription>
             </Field>
