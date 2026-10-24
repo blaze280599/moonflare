@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { Check, CircleUser, Gift, LogOut, Menu, MoonStar, Star } from 'lucide-react';
+import { Check, CircleUser, Gift, KeyRound, LogOut, Menu, MoonStar, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
@@ -123,6 +123,12 @@ export default function SiteHeader({ player }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{player.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/reset-password">
+                    <KeyRound />
+                    Change password
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem disabled={signingOut} onSelect={onSignOut}>
                   <LogOut />
                   Sign out
@@ -163,6 +169,14 @@ export default function SiteHeader({ player }) {
                 <div className="mt-auto grid gap-1 px-2">
                   <Separator className="mb-2" />
                   <p className="truncate px-3 text-xs text-muted-foreground">Signed in as {player.username}</p>
+                  <SheetClose asChild>
+                    <Button asChild variant="ghost" size="lg" className="justify-start text-muted-foreground">
+                      <Link href="/reset-password">
+                        <KeyRound />
+                        Change password
+                      </Link>
+                    </Button>
+                  </SheetClose>
                   <Button variant="ghost" size="lg" className="justify-start text-muted-foreground" disabled={signingOut} onClick={onSignOut}>
                     <LogOut />
                     Sign out
