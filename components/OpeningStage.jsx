@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { BookOpen, Layers, Loader2, Scissors, X } from 'lucide-react';
+import { BookOpen, Layers, Loader2, Scissors, Volume2, VolumeOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import HoloCard from '@/components/HoloCard/HoloCard';
 import { RARITY, foilFor } from '@/lib/cards';
 import { PACK, getArt, getBack } from '@/lib/art';
 import { PACK_COST } from '@/lib/gacha';
-import { celebrate } from '@/lib/celebrate';
+import { celebrate, sparkle } from '@/lib/celebrate';
 import { RARITY_BADGE } from '@/lib/rarity-styles';
+import { playRip, playSparkle, playTear, setSoundOn, unlockAudio } from '@/lib/sound';
+import { usePref } from '@/lib/usePref';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CARD_RATIO = 88 / 63;
 const SINK = 0.3; // how far the pack drops (in pack heights) before the cards slide out of it
@@ -31,6 +35,8 @@ function measure(w, h) {
     restY: -Math.min(36, h * 0.05)
   };
 }
+
+const rankOf = pull => RARITY[pull.card.rarity].rank;
 
 const captionFor = (era, { card, isNew, refund }) => (
   <>
@@ -73,6 +79,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
   const [top, setTop] = useState(0);
   const [flying, setFlying] = useState([]);
   const [revealed, setRevealed] = useState(() => deck.map(() => false));
+  const [soundOn, setSoundPref] = usePref('moonflare-sound', true);
 
   const areaRef = useRef(null);
   const canvasRef = useRef(null);
@@ -81,12 +88,15 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
   const sceneRef = useRef(null);
   const dragRef = useRef(null);
   const tappedRef = useRef(false);
+  const sparkleRef = useRef([]); // spread slots to sparkle once they've been dealt, after Show all
   const timers = useRef([]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
   const L = box && measure(box.w, box.h);
   const layoutRef = useRef(L);
   layoutRef.current = L;
+
+  useEffect(() => setSoundOn(soundOn), [soundOn]);
 
   useLayoutEffect(() => {
     const ro = new ResizeObserver(([entry]) => {
@@ -128,7 +138,9 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
           reducedMotion,
           onReady: () => setPackReady(true),
           onTearStart: () => setCut('started'),
+          onRip: playRip,
           onTorn: () => {
+            playTear();
             setCut('done');
             later(() => sceneRef.current?.present(-SINK * layoutRef.current.packH), 220);
             later(() => setPhase('emerge'), 680);
@@ -192,7 +204,14 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
   }, [phase]);
 
   useEffect(() => {
-    if (phase === 'spread') retireScene();
+    if (phase !== 'spread') return;
+    retireScene();
+    // Each slot is dealt 90 ms after the one before and takes about half a second to land.
+    for (const i of sparkleRef.current) {
+      const el = areaRef.current?.querySelector(`[data-slot="${i}"] .holo-card`);
+      later(() => sparkle(el, deck[i].card.rarity), i * 90 + 450);
+    }
+    sparkleRef.current = [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -203,13 +222,18 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, top]);
 
+  // Reveal effects, timed to the flip: chimes and sparkle for Rare and up, plus the flash and confetti for Legendary and up.
   const flip = i => {
-    setRevealed(prev => {
-      if (prev[i]) return prev;
-      const rarity = deck[i].card.rarity;
-      if (RARITY[rarity].rank >= 3) later(() => celebrate(rarity), 240);
-      return prev.map((v, k) => (k === i ? true : v));
-    });
+    if (revealed[i]) return;
+    const rarity = deck[i].card.rarity;
+    const rank = rankOf(deck[i]);
+    const el = stackRef.current?.querySelector('[data-top] .holo-card');
+    later(() => {
+      playSparkle(rank);
+      sparkle(el, rarity);
+    }, 260);
+    if (rank >= 3) later(() => celebrate(rarity), 240);
+    setRevealed(prev => prev.map((v, k) => (k === i ? true : v)));
   };
 
   // Springs a dragged card back to the middle of the stack.
@@ -294,15 +318,23 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
   };
 
   const showAll = () => {
-    const best = deck.filter((_, i) => !revealed[i]).reduce((a, p) => Math.max(a, RARITY[p.card.rarity].rank), -1);
+    const best = deck.filter((_, i) => !revealed[i]).reduce((a, p) => Math.max(a, rankOf(p)), -1);
     const rarity = Object.keys(RARITY).find(r => RARITY[r].rank === best);
     if (best >= 3) later(() => celebrate(rarity), 200);
+    later(() => playSparkle(best), 300);
+    sparkleRef.current = deck.flatMap((p, i) => (!revealed[i] && rankOf(p) >= 1 ? [i] : []));
     setRevealed(deck.map(() => true));
     setPhase('spread');
   };
 
+  const toggleSound = on => {
+    setSoundOn(on);
+    setSoundPref(on);
+    unlockAudio();
+  };
+
   const current = deck[top];
-  const tell = current && !revealed[top] && RARITY[current.card.rarity].rank >= 2;
+  const tell = current && !revealed[top] && rankOf(current) >= 2;
   let hint = '';
   if (phase === 'pack' && packReady && cut === 'none') hint = 'Press on the dotted line and drag across to cut it open · grab the pack anywhere else to turn it';
   else if (phase === 'pack' && cut === 'started') hint = 'Keep cutting all the way across';
@@ -315,15 +347,21 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
   }
 
   return (
-    <div className="stage" role="dialog" aria-modal="true" aria-label="Album opening">
+    // Audio may only start from a user gesture, so the first press anywhere on the stage unlocks it.
+    <div className="stage" role="dialog" aria-modal="true" aria-label="Album opening" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate font-mono text-xs tracking-wider text-white/55 uppercase">
           {era.group.name} · {era.name}
           <span className="max-sm:hidden"> · {era.sub}</span>
         </span>
-        <Button variant="ghost" size="icon-lg" onClick={onClose} aria-label="Close" className="text-white hover:bg-white/10">
-          <X />
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          <StageToggle label="Sound" pressed={soundOn} onPressedChange={toggleSound}>
+            {soundOn ? <Volume2 /> : <VolumeOff />}
+          </StageToggle>
+          <Button variant="ghost" size="icon-lg" onClick={onClose} aria-label="Close" className="text-white hover:bg-white/10">
+            <X />
+          </Button>
+        </div>
       </div>
 
       <div ref={areaRef} className={cn('relative min-h-[420px] flex-1', phase !== 'spread' && 'overflow-hidden select-none')}>
@@ -331,7 +369,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
           <div className="grid min-h-full content-center justify-items-center py-4">
             <div className="flex max-w-[1100px] flex-wrap justify-center gap-[clamp(10px,2vw,22px)]">
               {deck.map((pull, i) => (
-                <div key={i} className="slot revealed" style={{ animationDelay: `${i * 90}ms` }}>
+                <div key={i} data-slot={i} className="slot revealed" style={{ animationDelay: `${i * 90}ms` }}>
                   <HoloCard
                     image={getArt(pull.card)}
                     flipped={false}
@@ -456,5 +494,27 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
         )}
       </div>
     </div>
+  );
+}
+
+// A switch in the stage's top bar, remembered per browser (usePref).
+function StageToggle({ label, pressed, onPressedChange, children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Toggle
+          size="lg"
+          aria-label={label}
+          pressed={pressed}
+          onPressedChange={onPressedChange}
+          className="text-white/45 hover:bg-white/10 hover:text-white aria-pressed:bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-white"
+        >
+          {children}
+        </Toggle>
+      </TooltipTrigger>
+      <TooltipContent>
+        {label} {pressed ? 'on' : 'off'}
+      </TooltipContent>
+    </Tooltip>
   );
 }

@@ -78,7 +78,9 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
 | `tests/` | Unit tests for game logic (`npm test`) |
 | `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, booster pack wrappers (`getPackArt`, `PACK`), photo cropping |
-| `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
+| `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls, and `sparkle()` stars over a revealed Rare-or-better card |
+| `lib/sound.js` | Sounds made with the Web Audio API: the rip (scaled by cut speed), the tear, reveal chimes |
+| `lib/usePref.js` | `usePref(key, default)`: a per-browser setting in localStorage, read in an effect (the stage's sound switch) |
 | `lib/rarity-styles.js` | Tailwind class maps per rarity |
 | `prototype/` | The original single-file HTML prototype. Reference only; don't develop it further |
 
@@ -125,6 +127,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Password reset.** `/forgot-password` is public and guest-only; it always shows the same "if that email has an account" screen, so it can't be used to find players (Supabase also answers unknown emails with a success). The emailed link goes to `/auth/confirm?next=/reset-password`, which signs the player in. `/reset-password` is deliberately *not* in `PUBLIC`: it needs that session, and the account menu's Change password uses the same page. A dead link goes back to `/forgot-password?error=link`. The `?next=` in the link only survives if the Supabase redirect allowlist matches it (`…/auth/confirm**`, see README "Run it"); otherwise Supabase quietly sends the player to the bare Site URL. Don't test by spamming reset emails: the built-in mailer sends only a few an hour.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
+- **Sound needs a gesture.** Browsers block audio until the player presses something, so the stage calls `unlockAudio()` from `onPointerDownCapture` / `onKeyDownCapture`. Every `play*` in `lib/sound.js` is silent until then and while sound is off, and no `AudioContext` is created while it's off. The rip is driven by `onRip(speed)` from `PackScene.grow()` (where the cut extends), and `lib/sound.js` throttles the grains. Sounds aren't skipped for reduced motion; the sparkle is.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
@@ -159,4 +162,3 @@ The README's Direction section lists planned features. Notes for the likely next
 - **Trading** → Supabase (a trades table, written only by Server Actions like the save), deployed on Vercel. Move cards between two saves in one transaction (a Postgres function called with the secret key) so neither side can lose a card on a clash.
 - **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
-- **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.
