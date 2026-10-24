@@ -41,7 +41,7 @@ async function galleryByAlbum(page) {
   const byAlbum = {};
   for (const line of parse.wikitext['*'].split('\n')) {
     const m = line.match(CAPTION);
-    if (m) (byAlbum[title(m[2])] ??= []).push(m[1].trim());
+    if (m) (byAlbum[title(m[2])] ??= []).push(m[1].trim().replace(/^(?:File|Image):\s*/i, ''));
   }
   return byAlbum;
 }

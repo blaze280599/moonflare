@@ -47,6 +47,8 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] A second group: aespa, 8 eras from SAVAGE to LEMONADE (Korean minis and studio albums), 136 photo cards
 - [x] A third group: NewJeans, 4 eras from New Jeans to How Sweet (both EPs and both single albums), 84 photo cards
 - [x] A fourth group: IVE, 6 eras from I've IVE to REVIVE+ (EPs and studio albums), 150 photo cards
+- [x] A fifth group: ITZY, 6 eras from CRAZY IN LOVE to MOTTO, 126 photo cards. The wiki has too few photos of
+  their 2019–2022 minis (and Lia sat out BORN TO BE), so those are left out for now
 - [x] Album opening: a 3D foil booster pack you cut open by click-dragging along its cut line (and can grab to turn it around), then a one-by-one card reveal
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
@@ -156,7 +158,7 @@ link to (handy for finding the right page names), and it writes nothing if any c
 - **Dead photos:** `npm run photos:check` asks the wiki whether every listed file still exists and names any
   that were deleted or renamed. Run it now and then; a missing file shows as a blank card.
 
-If this site ever goes public, the photos have to go: they belong to the groups' labels (Source Music / HYBE for LE SSERAFIM, SM Entertainment for aespa, ADOR / HYBE for NewJeans, Starship Entertainment for IVE). Swap them
+If this site ever goes public, the photos have to go: they belong to the groups' labels (Source Music / HYBE for LE SSERAFIM, SM Entertainment for aespa, ADOR / HYBE for NewJeans, Starship Entertainment for IVE, JYP Entertainment for ITZY). Swap them
 for licensed art or player-uploaded photos first.
 
 ## Run it
