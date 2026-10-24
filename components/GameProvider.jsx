@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import InspectModal from '@/components/InspectModal';
 import LocalSaveImport from '@/components/LocalSaveImport';
 import { ERAS } from '@/lib/cards';
+import { toploaderFor } from '@/lib/deco';
 import { loadArtFonts } from '@/lib/art';
 import { useGame } from '@/lib/useGame';
 
@@ -38,6 +39,8 @@ export function GameProvider({ initial, player, children }) {
           key={inspecting.id}
           card={inspecting}
           owned={game.state.owned[inspecting.id] || 0}
+          toploader={toploaderFor(game.state, inspecting.id)}
+          onSaveToploader={game.saveToploader}
           onClose={() => setInspecting(null)}
           onError={msg => toast.error(msg)}
         />

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ImageUp } from 'lucide-react';
+import { ImageUp, Sticker } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import HoloCard from '@/components/HoloCard/HoloCard';
+import ToploaderEditor from '@/components/ToploaderEditor';
 import { HOLO_PRESETS, RARITY, foilFor } from '@/lib/cards';
 import { getArt, getBack, photoToCard } from '@/lib/art';
 import { RARITY_BADGE } from '@/lib/rarity-styles';
@@ -14,8 +15,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Large card view: flip to the back, try every foil preset, or preview your own photo.
-export default function InspectModal({ card, owned, onClose, onError }) {
+// Owned cards can also go in a toploader: decorate mode swaps the HoloCard for the editor (freeing its WebGL context).
+export default function InspectModal({ card, owned, toploader, onSaveToploader, onClose, onError }) {
   const base = foilFor(card);
+  const [decorating, setDecorating] = useState(false);
   const [foil, setFoil] = useState('default');
   const [photo, setPhoto] = useState(null);
 
@@ -40,76 +43,99 @@ export default function InspectModal({ card, owned, onClose, onError }) {
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 sm:max-w-3xl">
-        <div className="grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
-          <div className="flex justify-center">
-            <HoloCard
-              image={photo ?? getArt(card)}
-              backImage={getBack(card.era)}
-              alt="Photocard, tap to flip"
-              tiltMax={18}
-              hoverScale={1.03}
-              style={{ '--hc-w': 'min(320px, 70vw)' }}
-              {...foilProps}
-            />
+        {decorating ? (
+          <ToploaderEditor
+            card={card}
+            image={getArt(card)}
+            initial={toploader}
+            onSave={top => onSaveToploader(card.id, top)}
+            onBack={() => setDecorating(false)}
+          />
+        ) : (
+          <div className="grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
+            <div className="flex justify-center">
+              <HoloCard
+                image={photo ?? getArt(card)}
+                backImage={getBack(card.era)}
+                alt="Photocard, tap to flip"
+                tiltMax={18}
+                hoverScale={1.03}
+                style={{ '--hc-w': 'min(320px, 70vw)' }}
+                {...foilProps}
+              />
+            </div>
+
+            <div className="space-y-5">
+              <DialogHeader className="gap-2 text-left">
+                <span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
+                  {card.num} · {card.era.group.name} {card.era.name}
+                </span>
+                <DialogTitle className="font-heading text-4xl leading-none font-semibold tracking-tight">
+                  {card.member ? card.member.name : card.era.group.name}
+                  {card.member && <span className="ml-2 align-middle font-sans text-lg font-medium text-muted-foreground">{card.member.kr}</span>}
+                </DialogTitle>
+                <DialogDescription>
+                  {card.era.sub} · {card.label}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={cn('font-mono text-[10px] tracking-wider uppercase', RARITY_BADGE[card.rarity])}>
+                  {RARITY[card.rarity].label}
+                </Badge>
+                <Badge variant="outline" className="font-mono text-[10px] tracking-wider uppercase">
+                  Owned ×{owned}
+                </Badge>
+                {toploader && (
+                  <Badge variant="secondary" className="font-mono text-[10px] tracking-wider uppercase">
+                    <Sticker />
+                    In a toploader
+                  </Badge>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="foilSelect">Foil</Label>
+                <Select value={foil} onValueChange={setFoil}>
+                  <SelectTrigger id="foilSelect" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">This card&apos;s foil ({base.intensity ? base.preset : 'none'})</SelectItem>
+                    <SelectSeparator />
+                    {HOLO_PRESETS.map(p => (
+                      <SelectItem key={p} value={p}>
+                        {p[0].toUpperCase() + p.slice(1)}
+                      </SelectItem>
+                    ))}
+                    <SelectSeparator />
+                    <SelectItem value="none">No foil</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {owned > 0 && (
+                <Button size="lg" className="w-full" onClick={() => setDecorating(true)}>
+                  <Sticker />
+                  {toploader ? 'Edit toploader' : 'Decorate a toploader'}
+                </Button>
+              )}
+
+              <div className="space-y-2">
+                <Button variant="outline" size="lg" className="relative w-full" asChild>
+                  <label htmlFor="photoInput">
+                    <ImageUp />
+                    Try it with your own photo
+                    <input type="file" id="photoInput" accept="image/*" onChange={onPhoto} className="sr-only" />
+                  </label>
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Your photo stays on this device and only replaces the art in this preview. Tap the card to see its back.
+                </p>
+              </div>
+            </div>
           </div>
-
-          <div className="space-y-5">
-            <DialogHeader className="gap-2 text-left">
-              <span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                {card.num} · {card.era.group.name} {card.era.name}
-              </span>
-              <DialogTitle className="font-heading text-4xl leading-none font-semibold tracking-tight">
-                {card.member ? card.member.name : card.era.group.name}
-                {card.member && <span className="ml-2 align-middle font-sans text-lg font-medium text-muted-foreground">{card.member.kr}</span>}
-              </DialogTitle>
-              <DialogDescription>
-                {card.era.sub} · {card.label}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className={cn('font-mono text-[10px] tracking-wider uppercase', RARITY_BADGE[card.rarity])}>
-                {RARITY[card.rarity].label}
-              </Badge>
-              <Badge variant="outline" className="font-mono text-[10px] tracking-wider uppercase">
-                Owned ×{owned}
-              </Badge>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="foilSelect">Foil</Label>
-              <Select value={foil} onValueChange={setFoil}>
-                <SelectTrigger id="foilSelect" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">This card&apos;s foil ({base.intensity ? base.preset : 'none'})</SelectItem>
-                  <SelectSeparator />
-                  {HOLO_PRESETS.map(p => (
-                    <SelectItem key={p} value={p}>
-                      {p[0].toUpperCase() + p.slice(1)}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value="none">No foil</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Button variant="outline" size="lg" className="relative w-full" asChild>
-                <label htmlFor="photoInput">
-                  <ImageUp />
-                  Try it with your own photo
-                  <input type="file" id="photoInput" accept="image/*" onChange={onPhoto} className="sr-only" />
-                </label>
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Your photo stays on this device and only replaces the art in this preview. Tap the card to see its back.
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -1,9 +1,10 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { Lock, Sticker } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getArt } from '@/lib/art';
+import Toploader from '@/components/Toploader';
 import { RARITY_BADGE, RARITY_RING } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Static thumbnails only: every live HoloCard holds a WebGL context, and browsers cap them at ~16.
-export default function Binder({ era, onEraChange, owned, artReady, onInspect }) {
+// Decorated cards show in their toploader (plain DOM too) with a sticker badge.
+export default function Binder({ era, onEraChange, owned, deco, artReady, onInspect }) {
   const cards = CARDS.filter(c => c.era.code === era.code);
   const count = cards.filter(c => owned[c.id]).length;
 
@@ -65,6 +67,27 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
                       </div>
                     </div>
                   </div>
+                );
+              }
+              const top = deco[c.id];
+              if (top) {
+                return (
+                  <button
+                    key={c.id}
+                    aria-label={`${who} ${c.label}, owned ${n}, in a decorated toploader`}
+                    onClick={() => onInspect(c)}
+                    className="relative rounded-lg transition duration-200 hover:-translate-y-1 hover:-rotate-1 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none"
+                  >
+                    <Toploader image={getArt(c)} tint={top.t} stickers={top.s} />
+                    <Badge className="absolute top-1.5 left-1.5 z-10 bg-primary px-1 text-primary-foreground" aria-hidden>
+                      <Sticker />
+                    </Badge>
+                    {n > 1 && (
+                      <Badge variant="secondary" className="absolute top-1.5 right-1.5 z-10 bg-black/70 font-mono text-[10px] text-white">
+                        ×{n}
+                      </Badge>
+                    )}
+                  </button>
                 );
               }
               return (
