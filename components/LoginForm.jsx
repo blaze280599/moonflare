@@ -37,7 +37,12 @@ export default function LoginForm({ next, confirmFailed, configured }) {
               <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={state?.values?.email} />
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <div className="flex items-center">
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Link href="/forgot-password" className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <Input id="password" name="password" type="password" autoComplete="current-password" required />
             </Field>
             <Field>

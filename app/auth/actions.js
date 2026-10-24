@@ -78,3 +78,45 @@ export async function signOut() {
   }
   redirect('/login');
 }
+
+// Always answers the same way whether or not the email has an account, so the form can't be used to find
+// players. Supabase does the same: an unknown email gets a success with nothing sent.
+export async function requestPasswordReset(_prev, formData) {
+  const email = field(formData, 'email');
+  const values = { email };
+  if (!supabaseConfigured) return { error: NOT_SET_UP, values };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { errors: { email: 'Enter a valid email.' }, values };
+
+  const origin = (await headers()).get('origin');
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/confirm?next=/reset-password` });
+  if (error?.code === 'over_email_send_rate_limit') {
+    // "For security purposes, you can only request this after N seconds": a link went to this address a moment ago.
+    if (/after \d+ seconds?/.test(error.message)) return { sentTo: email };
+    return { error: 'Too many emails sent just now. Try again in an hour.', values };
+  }
+  if (error) return { error: 'Couldn’t send the reset link. Try again in a moment.', values };
+  return { sentTo: email };
+}
+
+// Needs a session: the reset email's link signs the player in, and signed-in players can change it any time.
+export async function updatePassword(_prev, formData) {
+  const password = String(formData.get('password') ?? '');
+  const confirm = String(formData.get('confirm') ?? '');
+  if (!supabaseConfigured) return { error: NOT_SET_UP };
+
+  const errors = {};
+  if (password.length < 8) errors.password = 'Use at least 8 characters.';
+  else if (confirm !== password) errors.confirm = 'The passwords don’t match.';
+  if (Object.keys(errors).length) return { errors };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (error.code === 'same_password') return { errors: { password: 'That’s your current password. Pick a new one.' } };
+    if (error.code === 'weak_password') return { errors: { password: error.message } };
+    if (error.code === 'session_not_found' || error.status === 401) return { error: 'Your session ended. Request a new reset link.' };
+    return { error: 'Couldn’t change your password. Try again.' };
+  }
+  return { changed: true };
+}

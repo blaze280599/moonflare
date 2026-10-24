@@ -48,6 +48,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
 - [x] Accounts: sign up, log in and sign out (Supabase Auth). Every game page needs a signed-in player
+- [x] Forgot password (an emailed reset link) and Change password in the account menu
 - [x] Saves on the server, per account (Supabase `saves` table), with every album roll, daily claim and reset done in Server Actions. A browser's old localStorage save can be brought into an account once
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 
@@ -77,7 +78,9 @@ Needs Node.js 18.18 or newer, and a Supabase project for sign-in (the free tier 
 3. Apply the SQL in `supabase/migrations/` in order (SQL Editor, or `supabase db push` with the CLI). It creates the
    `profiles` and `saves` tables, their row-level security, and the trigger that gives every new account a save.
 4. In the Supabase dashboard, under Authentication → URL Configuration, set the Site URL to `http://localhost:3000`
-   (your real domain once deployed) and add `http://localhost:3000/auth/confirm` to the redirect URLs.
+   (your real domain once deployed) and add `http://localhost:3000/auth/confirm**` to the redirect URLs. The `**`
+   matters: password reset links carry `?next=/reset-password`, and a redirect URL that doesn't match falls back to
+   the bare Site URL, where the link does nothing.
 
 ```bash
 npm install
@@ -89,7 +92,8 @@ Then open http://localhost:3000. Without the env vars every page redirects to `/
 Confirmation emails come from Supabase's built-in mailer, which only sends a few an hour. That's fine for a
 private club; add your own SMTP under Authentication → Emails if it isn't. The default email's link only works
 in the browser that signed up. To make it work on any device, change the template's link to
-`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`. Do the same for the Reset password
+template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`.
 
 ## UI stack
 
