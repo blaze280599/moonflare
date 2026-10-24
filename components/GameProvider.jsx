@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import InspectModal from '@/components/InspectModal';
+import LocalSaveImport from '@/components/LocalSaveImport';
 import { ERAS } from '@/lib/cards';
 import { loadArtFonts } from '@/lib/art';
 import { useGame } from '@/lib/useGame';
@@ -31,6 +32,7 @@ export function GameProvider({ initial, player, children }) {
   return (
     <GameContext.Provider value={value}>
       {children}
+      {initial?.needsImport && <LocalSaveImport player={player} run={game.run} />}
       {inspecting && (
         <InspectModal
           key={inspecting.id}
