@@ -36,7 +36,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
 - **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password; anyone who can reach the site can sign up. See README, "Run it", for setup.
-- **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username and time zone), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading is planned but not built.
+- **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username and time zone), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading (`trade_listings`, `trade_offers`) is written only by Postgres functions that Server Actions in `app/actions/trade.js` call with the secret key.
 
 ## Project map
 
@@ -53,6 +53,11 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
 | `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
 | `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
+| `app/actions/trade.js` | Trade Server Actions: `createListing`, `cancelListing`, `makeOffer`, `withdrawOffer`, `acceptOffer`, `declineOffer`, `loadBoard`. Each returns `{ state, board }` |
+| `app/(game)/trade/page.js` | `/trade`: the trade board (`components/TradeBoard.jsx`), read on the server by `lib/supabase/trades.js` |
+| `components/TradeBoard.jsx` | Trade tabs: board, your listings and their offers, your offers, history. `ListCardDialog.jsx` and `MakeOfferDialog.jsx` are its dialogs |
+| `components/TradeCardThumb.jsx` | A card on the trade board: art if you may see it, the album's card back if not |
+| `lib/trade.js` | Pure trade rules: criteria (`sanitizeWant`), matching, `checkOffer`, the no-spoiler rule `canSee`, limits |
 | `supabase/migrations/` | Database schema: `profiles`, `saves`, RLS, the new-user trigger. Apply new migrations through the Supabase MCP server or CLI, and commit the SQL |
 | `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
@@ -125,6 +130,10 @@ These have all bitten us before. Read them before touching the related code.
 - **Password reset.** `/forgot-password` is public and guest-only; it always shows the same "if that email has an account" screen, so it can't be used to find players (Supabase also answers unknown emails with a success). The emailed link goes to `/auth/confirm?next=/reset-password`, which signs the player in. `/reset-password` is deliberately *not* in `PUBLIC`: it needs that session, and the account menu's Change password uses the same page. A dead link goes back to `/forgot-password?error=link`. The `?next=` in the link only survives if the Supabase redirect allowlist matches it (`…/auth/confirm**`, see README "Run it"); otherwise Supabase quietly sends the player to the bare Site URL. Don't test by spamming reset emails: the built-in mailer sends only a few an hour.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
+- **Trading uses escrow.** Listing or offering a card removes that copy from `saves.owned` until the listing or offer closes, so a binder can be one copy short while a card is up for trade. Never move cards between saves in JS: every trade change is a function in `supabase/migrations/*_trading.sql`, which locks the listing row, then the saves (in `user_id` order), then offer rows, and bumps each save's `version`. Keep that lock order in new functions, or two trades can deadlock. Reset calls `trade_release_all` before erasing, so escrowed cards and other players' offers go home.
+- **No spoilers on the trade board.** Only render a card's art there if `canSee(owned, id)` from `lib/trade.js` (or it's the player's own listed or offered card). Everyone else gets `getBack(era)` through `TradeCardThumb`. Wants are criteria, not card ids, so never add a "pick any card from the catalog" control. The catalog itself ships in the client bundle, so this is about what the UI shows, not a secret.
+- **Trade tables have no client grants.** RLS is on with no policies (the advisor's "RLS enabled, no policy" notice is expected), and `lib/supabase/trades.js` reads the board with the secret key, sending only what that player may see: other players' offers on other players' listings appear only as a count. The `trade_*` functions are executable by `service_role` only.
+- **Expiry is lazy.** `trade_expire()` runs before every board read; the accept and offer functions also refuse a listing past `expires_at`. There's no cron job.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
@@ -156,7 +165,6 @@ If you can't verify something (no browser available, say), state that in the com
 
 The README's Direction section lists planned features. Notes for the likely next ones:
 
-- **Trading** → Supabase (a trades table, written only by Server Actions like the save), deployed on Vercel. Move cards between two saves in one transaction (a Postgres function called with the secret key) so neither side can lose a card on a clash.
 - **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
 - **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.
