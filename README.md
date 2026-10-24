@@ -46,6 +46,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] A real group: LE SSERAFIM, 7 eras from FEARLESS to PUREFLOW Pt.1, 147 photo cards (see [Real groups](#real-groups))
 - [x] A second group: aespa, 8 eras from SAVAGE to LEMONADE (Korean minis and studio albums), 136 photo cards
 - [x] A third group: NewJeans, 4 eras from New Jeans to How Sweet (both EPs and both single albums), 84 photo cards
+- [x] A fourth group: IVE, 6 eras from I've IVE to REVIVE+ (EPs and studio albums), 150 photo cards
 - [x] Album opening: a 3D foil booster pack you cut open by click-dragging along its cut line (and can grab to turn it around), then a one-by-one card reveal
 - [x] Binder collection view with completion %
 - [x] Landing page, nav bar, and a page per group plus a collection page
@@ -138,7 +139,7 @@ official concept photo from the [K-pop Fandom wiki](https://kpop.fandom.com), cr
 by the wiki's image CDN. Nothing is downloaded or committed; `lib/photos/<group>.js` only lists
 URLs. Every era has the same layout: per member an album PC, selfie PC,
 POB and lucky draw (four different photos from that era's shoot), plus one group special. That's 21 cards
-for a five-member group and 17 for aespa's four. Each group's set covers its Korean minis and studio
+for a five-member group, 17 for aespa's four and 25 for IVE's six. Each group's set covers its Korean minis and studio
 albums, not digital singles or Japanese releases. NewJeans also gets its two single albums (it has only two EPs),
 and an album's photos include its pre-release single's shoot (OMG pools Ditto's, How Sweet pools Bubble Gum's).
 
@@ -155,7 +156,7 @@ link to (handy for finding the right page names), and it writes nothing if any c
 - **Dead photos:** `npm run photos:check` asks the wiki whether every listed file still exists and names any
   that were deleted or renamed. Run it now and then; a missing file shows as a blank card.
 
-If this site ever goes public, the photos have to go: they belong to the groups' labels (Source Music / HYBE for LE SSERAFIM, SM Entertainment for aespa, ADOR / HYBE for NewJeans). Swap them
+If this site ever goes public, the photos have to go: they belong to the groups' labels (Source Music / HYBE for LE SSERAFIM, SM Entertainment for aespa, ADOR / HYBE for NewJeans, Starship Entertainment for IVE). Swap them
 for licensed art or player-uploaded photos first.
 
 ## Run it
