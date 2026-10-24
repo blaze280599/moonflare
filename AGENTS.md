@@ -36,7 +36,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
 - **Accounts:** Supabase Auth through `@supabase/ssr` (cookie sessions). Email + password; anyone who can reach the site can sign up. See README, "Run it", for setup.
-- **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username and time zone), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading (`trade_listings`, `trade_offers`) is written only by Postgres functions that Server Actions in `app/actions/trade.js` call with the secret key.
+- **Persistence:** one save per account in Supabase (`public.saves`, plus `public.profiles` for username, time zone and the profile page), schema in `supabase/migrations/`. The `(game)` layout reads it as the player (RLS); every write goes through a Server Action in `app/actions/game.js` using the secret key. Trading (`trade_listings`, `trade_offers`) is written only by Postgres functions that Server Actions in `app/actions/trade.js` call with the secret key. Profile pictures are in the private `avatars` Storage bucket, written only by `app/actions/profile.js`.
 
 ## Project map
 
@@ -47,6 +47,11 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/(game)/page.js` | `/`: the landing page (`components/Landing.jsx`) |
 | `app/(game)/groups/[slug]/page.js` | `/groups/<slug>`: one group's albums (`components/GroupPage.jsx`). Params from `GROUPS` |
 | `app/(game)/collection/page.js` | `/collection`: album progress, the binder and Reset (`components/Collection.jsx`) |
+| `app/(game)/players/[username]/page.js` | `/players/<username>`: a player's profile (`components/ProfilePage.jsx`), read on the server by `lib/supabase/profiles.js`. `/profile` redirects to your own |
+| `app/actions/profile.js` | Profile Server Actions: `saveProfile` (bio, favourites, banner), `saveShowcase`, `uploadAvatar`, `removeAvatar`. Each returns `{ profile }` |
+| `lib/profile.js` | Pure profile rules: sanitizers, `showcaseFor` / `bannerFor` (hide what's no longer owned), stats, `BADGES`, `biasWall`, `buildProfileView`, `avatarType` |
+| `components/ProfilePage.jsx` | The profile page. `ShowcaseEditor.jsx`, `ProfileEditDialog.jsx` and `AvatarDialog.jsx` (crop and upload) are its editors; `ShowcaseCard.jsx` draws a card or its toploader; `PlayerAvatar.jsx` is the picture with an initials fallback |
+| `lib/profile-styles.js` | Tailwind classes for the preset banners |
 | `app/(auth)/` | `/login`, `/signup`, `/forgot-password` and `/reset-password` with their own centered layout (no game header). Forms are `components/LoginForm.jsx`, `SignupForm.jsx`, `ForgotPasswordForm.jsx` and `ResetPasswordForm.jsx` |
 | `app/auth/actions.js` | Server Actions: `logIn`, `signUp` (validates the form, rejects taken usernames, sends the time zone), `signOut`, `requestPasswordReset`, `updatePassword` |
 | `app/auth/confirm/route.js` | Where the confirmation and password reset emails' links land; starts the session, then goes to `next` |
@@ -151,6 +156,11 @@ These have all bitten us before. Read them before touching the related code.
 - **Expiry is lazy.** `trade_expire()` runs before every board read; the accept and offer functions also refuse a listing past `expires_at`. There's no cron job.
 - **Decorations outlive a traded card.** Trades and escrow only touch `saves.owned`, so a toploader in `saves.deco` stays behind when its last copy leaves. The binder only draws toploaders on owned slots, so it reappears if the card comes back. Clean `deco` in the trade functions if that ever matters.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
+- **Profiles are read with the secret key.** RLS still lets a player `select` only their own `profiles` row, so `/players/<username>` reads the profile and save through `lib/supabase/profiles.js` and sends only `buildProfileView()` (derived stats, showcased cards and their toploaders), never the other player's `owned` map. Keep it that way when adding profile fields.
+- **Showcase and banner hide, never drop.** `profiles.showcase` (card ids) and a `card:` / `album:` banner stay stored when the card leaves the binder; `showcaseFor` and `bannerFor` hide them at read time, like `toploaderFor`. Reset doesn't touch the profile. Banner preset ids in `BANNERS` are stored values: add new ones, never rename.
+- **Badges are derived, not stored.** `BADGES` in `lib/profile.js` works them out from the save on every load. A badge that needs history the save doesn't keep (past pity streaks, say) needs a new column first.
+- **Avatars live in a private bucket with no storage policies.** Nobody but the secret key can read or write `avatars`, on purpose: `uploadAvatar` checks the file's magic bytes (`avatarType`: WebP or JPEG, 200 KB) and always writes under `<user id>/`, and the bucket's own size and type limits back that up. Pages show pictures through signed URLs made on the server (`avatarUrl`, one day), including the header's, which the `(game)` layout signs. Each upload gets a new file name and the old one is deleted, so there's no stale cache. `AvatarDialog` calls `router.refresh()` after a change so the header picks it up.
+- **The showcase uses HTML5 drag and drop** for mouse users, which touch screens don't fire; the arrow and remove buttons under each card are the touch and keyboard path, so keep them. Synthetic mouse drags from browser automation don't start HTML5 drags either: test the drop logic by dispatching `DragEvent`s.
 
 ## Verifying a change
 

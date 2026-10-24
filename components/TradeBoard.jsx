@@ -151,7 +151,9 @@ export default function TradeBoard({ initialBoard }) {
                       {l.offers.map(o => (
                         <Item key={o.id} variant="muted" className="items-start">
                           <ItemContent className="min-w-0 basis-full gap-3">
-                            <ItemTitle>{o.offerer} offers</ItemTitle>
+                            <ItemTitle>
+                              <PlayerLink name={o.offerer} /> offers
+                            </ItemTitle>
                             <OfferedCards ids={o.cards} owned={owned} thumb={thumb} />
                           </ItemContent>
                           <ItemActions className="w-full justify-end">
@@ -268,7 +270,7 @@ function ListingCard({ card, thumb, missing, listing, by, children }) {
           </div>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="size-3" />
-            Listed by {by} · {left(listing.expiresAt)}
+            Listed by <PlayerLink name={by} /> · {left(listing.expiresAt)}
           </p>
         </div>
       </CardContent>
@@ -303,17 +305,40 @@ const STATUS = {
   expired: ['Expired', 'outline']
 };
 
+// A player's name, linking to their profile. 'A player' (a profile that couldn't be read) stays plain text.
+function PlayerLink({ name }) {
+  if (!name || name === 'A player') return name;
+  return (
+    <Link href={`/players/${encodeURIComponent(name)}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+      {name}
+    </Link>
+  );
+}
+
 function HistoryRow({ entry: h, thumb }) {
   const card = CARD_BY_ID[h.cardId];
   const [label, variant] = STATUS[h.status];
   const traded = label === 'Traded';
+  const other = <PlayerLink name={h.other} />;
   let text;
   if (h.role === 'lister') {
-    text = traded ? `You traded ${cardName(card)} to ${h.other} for ${plural(h.cards.length, 'card')}` : `Your listing of ${cardName(card)}`;
+    text = traded ? (
+      <>
+        You traded {cardName(card)} to {other} for {plural(h.cards.length, 'card')}
+      </>
+    ) : (
+      `Your listing of ${cardName(card)}`
+    );
   } else {
-    text = traded
-      ? `You got ${cardName(card)} from ${h.other} for ${plural(h.cards.length, 'card')}`
-      : `Your offer for ${h.other}’s ${cardName(card)}`;
+    text = traded ? (
+      <>
+        You got {cardName(card)} from {other} for {plural(h.cards.length, 'card')}
+      </>
+    ) : (
+      <>
+        Your offer for {other}’s {cardName(card)}
+      </>
+    );
   }
   return (
     <Item variant="outline" className="items-start">

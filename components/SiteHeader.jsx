@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { Check, CircleUser, Gift, KeyRound, LogOut, Menu, MoonStar, Star } from 'lucide-react';
+import { Check, Gift, KeyRound, LogOut, Menu, MoonStar, Star, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
@@ -11,6 +11,7 @@ import { getCover } from '@/lib/art';
 import { DAILY_STARS, PACK_COST } from '@/lib/gacha';
 import { signOut } from '@/app/auth/actions';
 import { useGameContext } from '@/components/GameProvider';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
 import {
@@ -121,13 +122,19 @@ export default function SiteHeader({ player }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="lg" className="max-w-40 px-2 max-md:hidden" aria-label={`Account: ${player.username}`}>
-                  <CircleUser />
+                  <PlayerAvatar username={player.username} src={player.avatar} size="sm" />
                   <span className="truncate">{player.username}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{player.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <UserRound />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/reset-password">
                     <KeyRound />
@@ -177,6 +184,10 @@ export default function SiteHeader({ player }) {
                 <div className="mt-auto grid gap-1 px-2">
                   <Separator className="mb-2" />
                   <p className="truncate px-3 text-xs text-muted-foreground">Signed in as {player.username}</p>
+                  <MobileLink href="/profile" pathname={pathname} active={isActive(pathname, '/players')}>
+                    <PlayerAvatar username={player.username} src={player.avatar} size="sm" />
+                    Profile
+                  </MobileLink>
                   <SheetClose asChild>
                     <Button asChild variant="ghost" size="lg" className="justify-start text-muted-foreground">
                       <Link href="/reset-password">
@@ -227,8 +238,7 @@ function GroupLink({ group, active, owned, loaded, artReady }) {
   );
 }
 
-function MobileLink({ href, pathname, children }) {
-  const active = isActive(pathname, href);
+function MobileLink({ href, pathname, active = isActive(pathname, href), children }) {
   return (
     <SheetClose asChild>
       <Button asChild variant="ghost" size="lg" className={cn('justify-start text-muted-foreground', active && 'bg-muted text-foreground')}>
