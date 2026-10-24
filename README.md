@@ -30,7 +30,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Binder pages.** Collections shown as plastic sleeves in a binder, the way collectors really display PCs. *(Basic version built.)*
 - **Decorate your toploader.** Sticker and deco customization for favorite cards. This is huge in the real hobby.
 - **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users.
-- **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back.
+- **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back. *(Built: see [Comeback events](#comeback-events). Event albums use the normal pull rates and pity.)*
 - **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
 - **Fan chant / lightstick mode.** Shake or tap during a Legendary reveal and a lightstick glows in the group's color.
 
@@ -52,6 +52,20 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Saves on the server, per account (Supabase `saves` table), with every album roll, daily claim and reset done in Server Actions. A browser's old localStorage save can be brought into an account once
 - [x] Pick your bias: a favourite member per group (saved in `saves.bias`) gets 2 points more of the member cards
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
+- [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
+
+### Comeback events
+
+An event album is an ordinary entry in `ERAS` (`lib/cards.js`) with an `event: { starts, ends, blurb }` window, written as
+ISO timestamps with an explicit offset. Its 21 cards follow the usual layout, rates and pity. While it's live, a banner with a
+countdown shows on the landing page and the group's page, and the album sits in the group's grid with a Limited badge. Before
+it starts it's hidden everywhere. After it ends, the album shows as closed ("Event ended") and owned cards stay in the binder
+with a sparkle marking them event-exclusive. `openPack` checks the window with the server's clock; the browser's countdown
+is only a display.
+
+To run a new event, add an era with a new code and an `event` window (drawn art for MOONFLARE, photos for a real group, as
+for any era). Starlight Encore (`SE`, 20 Oct to 9 Nov 2026 KST) is the sample event. Retiring an event needs no change: it
+closes when its window ends. Don't delete or rename an event era once anyone owns its cards, since its card ids are save keys.
 
 ### Real groups
 
@@ -117,6 +131,7 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 - `tests/cards.test.js` checks the catalog: unique ids, 21 cards per era, a photo for every real-group card.
 - `lib/gacha.js` holds pull rates, pity, the bias boost (`BIAS_BOOST`, `memberRates()`) and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns about half its cost.
 - `tests/gacha.test.js` covers the odds, pity and economy. Run it with `npm test`.
+- `lib/events.js` has the comeback-event helpers (`eventPhase`, `canOpenEra`, countdown text), tested in `tests/events.test.js`. `components/EventBanner.jsx` is the banner and countdown badge; `lib/useNow.js` ticks the clock for them.
 - `lib/art.js` draws MOONFLARE's card art on canvas, and returns the photo URL for real groups' cards and covers.
 - `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (open an album, claim the daily stars, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
 - `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`.

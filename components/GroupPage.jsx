@@ -3,15 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, Loader2, Package } from 'lucide-react';
+import { Heart, Loader2, Lock, Package, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import BiasPicker from '@/components/BiasPicker';
+import EventBanner, { EventCountdown } from '@/components/EventBanner';
 import OpeningStage from '@/components/OpeningStage';
 import PackInfo from '@/components/PackInfo';
 import { useGameContext } from '@/components/GameProvider';
+import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUP_BY_SLUG } from '@/lib/cards';
 import { getCover } from '@/lib/art';
+import { canOpenEra, eventPhase } from '@/lib/events';
 import { PACK_COST } from '@/lib/gacha';
+import { useNow } from '@/lib/useNow';
 import { Badge } from '@/components/ui/badge';
 import {
   Breadcrumb,
@@ -34,8 +38,11 @@ export default function GroupPage({ slug }) {
   const [pack, setPack] = useState(null); // { id, era, pulls }
   const [opening, setOpening] = useState(null); // the era whose album is being rolled on the server
 
-  const eras = ERAS.filter(e => e.group === group).reverse();
-  const groupCards = CARDS.filter(c => c.era.group === group);
+  const now = useNow();
+
+  // Upcoming event albums stay hidden until they open; ended ones stay, closed, so their cards still count.
+  const eras = ERAS.filter(e => e.group === group && eventPhase(e, now) !== 'upcoming').reverse();
+  const groupCards = CARDS.filter(c => eras.includes(c.era));
   const groupOwned = groupCards.filter(c => state.owned[c.id]).length;
   const canAfford = state.coins >= PACK_COST;
 
@@ -46,6 +53,10 @@ export default function GroupPage({ slug }) {
     setOpening(null);
     if (error === 'not_enough_stars') {
       toast(`You need ${PACK_COST} ★`, { description: 'Claim your daily stars, or open albums to earn stars from duplicates.' });
+      return;
+    }
+    if (error === 'event_closed') {
+      toast('This album is closed', { description: `The ${era.name} event isn’t on right now.` });
       return;
     }
     if (error) {
@@ -115,6 +126,7 @@ export default function GroupPage({ slug }) {
             </div>
             <Progress value={loaded ? (groupOwned / groupCards.length) * 100 : 0} className="h-1" />
           </div>
+          <EventBanner group={group} className="space-y-2 pt-2" />
         </header>
 
         <div className="grid gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -122,27 +134,42 @@ export default function GroupPage({ slug }) {
             {eras.map(era => {
               const cards = groupCards.filter(c => c.era === era);
               const owned = cards.filter(c => state.owned[c.id]).length;
+              const open = canOpenEra(era, now);
               return (
-                <Card key={era.code} className="gap-0 p-0 transition hover:ring-primary/40">
+                <Card key={era.code} className={cn('gap-0 p-0 transition hover:ring-primary/40', era.event && open && 'ring-primary/50')}>
                   {/* Wrapped so Card's first-child img rules don't apply. */}
-                  <div className="p-2 pb-0 sm:p-3 sm:pb-0">
+                  <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     {artReady ? (
                       <img alt={`${era.name} album cover`} src={getCover(era)} className="aspect-square w-full rounded-lg object-cover shadow-lg shadow-black/40" />
                     ) : (
                       <Skeleton className="aspect-square w-full rounded-lg" />
                     )}
+                    {era.event && (
+                      <Badge className="absolute top-3.5 left-3.5 gap-1 sm:top-5 sm:left-5">
+                        <Sparkles />
+                        Limited
+                      </Badge>
+                    )}
                   </div>
                   <CardContent className="flex flex-1 flex-col gap-1 p-3 sm:p-4">
                     <CardTitle className="truncate text-base">{era.name}</CardTitle>
                     <CardDescription className="text-xs">{era.sub}</CardDescription>
+                    {era.event && <EventCountdown era={era} now={now} className="mt-1 max-w-full" />}
                     <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                       <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
                       <span className="tabular-nums">{loaded ? `${owned}/${cards.length}` : '—'}</span>
                     </div>
-                    <Button className="mt-3 w-full" disabled={!loaded || !artReady || !canAfford || Boolean(opening)} onClick={() => startPack(era)}>
-                      {opening === era ? <Loader2 className="animate-spin" /> : <Package />}
-                      {opening === era ? 'Opening…' : `Open · ${PACK_COST} ★`}
-                    </Button>
+                    {open ? (
+                      <Button className="mt-3 w-full" disabled={!loaded || !artReady || !canAfford || Boolean(opening)} onClick={() => startPack(era)}>
+                        {opening === era ? <Loader2 className="animate-spin" /> : <Package />}
+                        {opening === era ? 'Opening…' : `Open · ${PACK_COST} ★`}
+                      </Button>
+                    ) : (
+                      <Button className="mt-3 w-full" variant="outline" disabled>
+                        <Lock />
+                        Event ended
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

@@ -2,6 +2,7 @@
 
 import { getRandomValues } from 'node:crypto';
 import { ERAS, GROUPS } from '@/lib/cards';
+import { canOpenEra } from '@/lib/events';
 import { DAILY_STARS, PACK_COST, rollPack } from '@/lib/gacha';
 import { dateInZone, isTimeZone, mergeImport, resetState, rowToState, sanitizeImport, stateToRow } from '@/lib/save';
 import { adminConfigured, createAdminClient } from '@/lib/supabase/admin';
@@ -55,6 +56,8 @@ async function withPlayer(run) {
 export async function openPack(eraCode) {
   const era = ERAS.find(e => e.code === eraCode);
   if (!era) return { error: 'That album doesn’t exist.' };
+  // Event albums open only inside their window, by the server's clock. The browser's countdown is just a hint.
+  if (!canOpenEra(era, Date.now())) return { error: 'event_closed' };
   return withPlayer(player =>
     updateSave(player.id, state => {
       if (state.coins < PACK_COST) return { error: 'not_enough_stars' };

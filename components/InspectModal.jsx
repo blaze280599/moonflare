@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ImageUp } from 'lucide-react';
+import { ImageUp, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import HoloCard from '@/components/HoloCard/HoloCard';
 import { HOLO_PRESETS, RARITY, foilFor } from '@/lib/cards';
@@ -74,6 +74,12 @@ export default function InspectModal({ card, owned, onClose, onError }) {
               <Badge variant="outline" className="font-mono text-[10px] tracking-wider uppercase">
                 Owned ×{owned}
               </Badge>
+              {card.era.event && (
+                <Badge variant="secondary" className="font-mono text-[10px] tracking-wider uppercase">
+                  <Sparkles className="text-primary" />
+                  Event exclusive
+                </Badge>
+              )}
             </div>
 
             <div className="space-y-2">

@@ -75,6 +75,9 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
 | `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
+| `lib/events.js` | Comeback-event helpers: `eventPhase`, `canOpenEra`, `msUntilChange`, `formatCountdown` |
+| `lib/useNow.js` | `useNow(ms)`: a ticking clock for countdowns |
+| `components/EventBanner.jsx` | Live and upcoming event banner (landing and group pages) and the `EventCountdown` badge |
 | `lib/useGame.js` | Client game state: starts from the server's save, calls the Server Actions, adopts the state they return |
 | `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
 | `tests/` | Unit tests for game logic (`npm test`) |
@@ -127,6 +130,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
 - **The bias boost picks the member, never the rarity.** `pickCard()` in `lib/gacha.js` gives the bias `BIAS_BOOST` (2) extra percentage points of each member rarity and uses one `rng()` call either way, so rarity odds, pity and refunds are unchanged and rolls without a bias are identical to before. The user's hard limit is 1–2 points; `tests/gacha.test.js` enforces it. Show odds through `memberRates()`, never hand-computed numbers. `saves.bias` is `{ groupCode: memberCode }`; Reset keeps it.
+- **Comeback events are eras with a window.** An event album is an `ERAS` entry with `event: { starts, ends, blurb }` (ISO strings with an offset). The server decides: `openPack` refuses it outside the window with `event_closed`, using `Date.now()` on the server. Pages filter out `upcoming` eras with `eventPhase()` and show ended ones as closed; never drop an ended event's era, its card ids are save keys. Countdown text comes from `useNow()`, which starts from the render's own clock, so the phase matches between server and client but the seconds don't: keep `suppressHydrationWarning` on the countdown text. Drawn art keys palettes on era codes in `lib/art.js` (`PM`, `NB`, `SE`); a new MOONFLARE event era falls back to the Neon Bloom background unless you add one.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change

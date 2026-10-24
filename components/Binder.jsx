@@ -1,9 +1,11 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getArt } from '@/lib/art';
+import { eventPhase } from '@/lib/events';
+import { useNow } from '@/lib/useNow';
 import { RARITY_BADGE, RARITY_RING } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +16,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 export default function Binder({ era, onEraChange, owned, artReady, onInspect }) {
   const cards = CARDS.filter(c => c.era.code === era.code);
   const count = cards.filter(c => owned[c.id]).length;
+  // Upcoming event albums aren't listed until they open. Minute ticks are plenty for the picker.
+  const now = useNow(60_000);
+  const listed = g => ERAS.filter(e => e.group === g && eventPhase(e, now) !== 'upcoming');
 
   return (
     <section id="binder" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 pb-16">
@@ -22,6 +27,7 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
           <CardTitle className="font-heading text-2xl font-semibold tracking-tight">Your binder</CardTitle>
           <CardDescription>
             {count} of {cards.length} {era.group.name} {era.name} cards collected
+            {era.event && (eventPhase(era, now) === 'ended' ? ' · event ended, these cards can’t be pulled any more' : ' · limited event album')}
           </CardDescription>
           <Progress value={(count / cards.length) * 100} className="mt-1.5 h-1.5 max-w-xs max-sm:max-w-none" />
           <CardAction className="max-sm:mt-2">
@@ -33,9 +39,10 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
                 {GROUPS.map(g => (
                   <SelectGroup key={g.code}>
                     <SelectLabel>{g.name}</SelectLabel>
-                    {ERAS.filter(e => e.group === g).map(e => (
+                    {listed(g).map(e => (
                       <SelectItem key={e.code} value={e.code}>
                         {e.name}
+                        {e.event && <Sparkles className="text-primary" />}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -70,7 +77,7 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
               return (
                 <button
                   key={c.id}
-                  aria-label={`${who} ${c.label}, owned ${n}`}
+                  aria-label={`${who} ${c.label}${c.era.event ? ', event exclusive' : ''}, owned ${n}`}
                   onClick={() => onInspect(c)}
                   className={cn(
                     'sleeve-shine relative aspect-[63/88] overflow-hidden rounded-lg ring-2 transition duration-200 hover:-translate-y-1 hover:-rotate-1 hover:shadow-2xl hover:shadow-black/50 focus-visible:outline-none focus-visible:ring-4',
@@ -81,6 +88,11 @@ export default function Binder({ era, onEraChange, owned, artReady, onInspect })
                   {n > 1 && (
                     <Badge variant="secondary" className="absolute top-1.5 right-1.5 bg-black/70 font-mono text-[10px] text-white">
                       ×{n}
+                    </Badge>
+                  )}
+                  {c.era.event && (
+                    <Badge variant="secondary" className="absolute top-1.5 left-1.5 bg-black/70 px-1 text-white" aria-label="Event exclusive">
+                      <Sparkles className="text-primary" />
                     </Badge>
                   )}
                   <Badge className={cn('absolute bottom-1.5 left-1.5 font-mono text-[9px] tracking-wider uppercase', RARITY_BADGE[c.rarity])}>

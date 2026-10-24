@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Gift, Hand, Package, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import EventBanner from '@/components/EventBanner';
 import HoloCard from '@/components/HoloCard/HoloCard';
 import { useGameContext } from '@/components/GameProvider';
 import { CARD_KIND } from '@/components/PackInfo';
@@ -106,6 +107,7 @@ export default function Landing() {
             </p>
           </div>
         </div>
+        <EventBanner linkToGroup className="relative mx-auto max-w-6xl space-y-2 px-4 pb-12 md:-mt-8" />
       </section>
 
       <section className="border-t bg-card/30">
@@ -140,7 +142,8 @@ export default function Landing() {
               const eras = ERAS.filter(e => e.group === g);
               const cards = CARDS.filter(c => c.era.group === g);
               const owned = cards.filter(c => state.owned[c.id]).length;
-              const latest = eras[eras.length - 1];
+              // The group's newest regular album; event albums come and go.
+              const latest = eras.filter(e => !e.event).at(-1);
               return (
                 <Link
                   key={g.code}
