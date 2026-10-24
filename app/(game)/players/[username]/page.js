@@ -6,7 +6,7 @@ import { getPlayer } from '@/lib/supabase/server';
 
 export async function generateMetadata({ params }) {
   const { username } = await params;
-  return { title: decodeURIComponent(username), description: 'A Moonflare player’s profile and showcase.' };
+  return { title: decodeURIComponent(username), description: 'A Poca player’s profile and showcase.' };
 }
 
 // Any signed-in player can see any profile (middleware.js keeps signed-out visitors out); only its owner gets

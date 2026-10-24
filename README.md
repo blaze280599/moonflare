@@ -1,4 +1,4 @@
-# Moonflare Photocard Club
+# Poca Photocard Club
 
 A K-pop photocard pack-opening game built with Next.js and the React Bits
 [HoloCard](https://reactbits.dev/components/holo-card) component.
@@ -167,7 +167,7 @@ of past pity streaks, which the save doesn't keep).
 
 ### Real groups
 
-Moonflare is a private site for two people, so real groups use real photos. Each card hotlinks an
+Poca is a private site for two people, so real groups use real photos. Each card hotlinks an
 official concept photo from the [K-pop Fandom wiki](https://kpop.fandom.com), cropped to card shape
 by the wiki's image CDN. Nothing is downloaded or committed; `lib/photos/<group>.js` only lists
 URLs. Every era has the same layout: per member an album PC, selfie PC,

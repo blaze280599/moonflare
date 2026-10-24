@@ -322,7 +322,7 @@ export default function HoloCard({
   shadow = true,
   className = '',
   style,
-  // Moonflare additions: `flipped` makes the flip state controlled (cards are dealt face-down),
+  // Poca additions: `flipped` makes the flip state controlled (cards are dealt face-down),
   // and `onClick` replaces the built-in flip toggle when the parent needs its own click behavior.
   flipped: flippedProp,
   onClick

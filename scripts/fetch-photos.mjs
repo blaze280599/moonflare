@@ -19,7 +19,7 @@ const PER_MEMBER = 4;
 
 async function api(params) {
   const url = `${API}?${new URLSearchParams({ format: 'json', ...params })}`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'MoonflarePhotocardClub/1.0 (personal fan project)' } });
+  const res = await fetch(url, { headers: { 'User-Agent': 'PocaPhotocardClub/1.0 (personal fan project)' } });
   if (!res.ok) throw new Error(`${res.status} for ${url}`);
   return res.json();
 }

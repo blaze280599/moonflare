@@ -10,7 +10,7 @@ export default function SiteFooter() {
         <div className="max-w-xl space-y-2">
           <div className="flex items-center gap-2 text-foreground">
             <MoonStar className="size-4 text-primary" />
-            <span className="font-heading font-semibold">Moonflare Photocard Club</span>
+            <span className="font-heading font-semibold">Poca Photocard Club</span>
           </div>
           <p>
             Group photos load from the K-pop Fandom wiki; this is a fan project, not affiliated with any

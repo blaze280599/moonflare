@@ -3,7 +3,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 
 export const metadata = {
-  title: { default: 'Moonflare Photocard Club', template: '%s · Moonflare' },
+  title: { default: 'Poca Photocard Club', template: '%s · Poca' },
   description: 'Open K-pop albums, flip holo photocards, and fill your binder.'
 };
 

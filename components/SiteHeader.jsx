@@ -68,7 +68,7 @@ export default function SiteHeader({ player }) {
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
         <Link href="/" className="mr-4 flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           <MoonStar className="size-5 text-primary" />
-          <span className="font-heading text-lg font-semibold tracking-tight">Moonflare</span>
+          <span className="font-heading text-lg font-semibold tracking-tight">Poca</span>
         </Link>
 
         <NavigationMenu aria-label="Main" className="max-md:hidden">
@@ -175,7 +175,7 @@ export default function SiteHeader({ player }) {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   <MoonStar className="size-4 text-primary" />
-                  Moonflare
+                  Poca
                 </SheetTitle>
               </SheetHeader>
               <nav aria-label="Main" className="grid gap-1 px-2">
