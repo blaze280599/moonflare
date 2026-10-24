@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CARDS, ERAS, RARITY } from '../lib/cards.js';
-import { NEW_GAME, PACK_COST, PITY_AT, RATES, rollPack } from '../lib/gacha.js';
+import { BIAS_BOOST, NEW_GAME, PACK_COST, PITY_AT, RATES, biasShare, memberRates, pickCard, rollPack } from '../lib/gacha.js';
 
 const era = ERAS[0];
 // rng values that land inside each rarity's band (RATES are cumulative in list order).
@@ -89,4 +89,76 @@ test('an all-duplicate album refunds well under its cost', () => {
   const lastCard = perCard - p.common * refund('common') + p.common * refund('rare');
   const expected = 4 * perCard + lastCard;
   assert.ok(expected <= PACK_COST * 0.6, `expected refund ${expected.toFixed(1)} ★ per ${PACK_COST} ★ album`);
+});
+
+// Pick your bias. The user's hard limit is a 1-2 percentage point boost.
+const lsEra = ERAS.find(e => e.group.code === 'LS');
+const BIAS = 'KZ';
+const biased = { ...NEW_GAME, bias: { [lsEra.group.code]: BIAS } };
+const isBias = card => card.member?.code === BIAS;
+// A small seeded rng, so two rolls can share the same stream.
+const lcg = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+test('the bias boost stays within 1-2 percentage points', () => {
+  assert.ok(BIAS_BOOST >= 1 && BIAS_BOOST <= 2, `BIAS_BOOST is ${BIAS_BOOST}`);
+  const base = memberRates(lsEra, null);
+  const boosted = memberRates(lsEra, BIAS);
+  const gain = boosted.find(m => m.isBias).pct - base.find(m => m.member.code === BIAS).pct;
+  assert.ok(gain > 0 && gain <= 2, `bias gains ${gain} points per card`);
+  for (const m of boosted.filter(m => !m.isBias)) assert.ok(m.pct < base.find(b => b.member === m.member).pct);
+});
+
+test('member rates add up to every non-group card, with or without a bias', () => {
+  const memberPct = 100 - RATES.find(r => r.rarity === 'mythic').pct;
+  for (const bias of [null, BIAS]) {
+    const total = memberRates(lsEra, bias).reduce((s, m) => s + m.pct, 0);
+    assert.ok(Math.abs(total - memberPct) < 1e-9, `${bias}: ${total}`);
+  }
+  const even = memberRates(lsEra, null);
+  assert.ok(even.every(m => Math.abs(m.pct - even[0].pct) < 1e-9));
+});
+
+test('pickCard gives the bias exactly biasShare of the picks', () => {
+  const options = CARDS.filter(c => c.era === lsEra && c.rarity === 'common');
+  const N = 100_000;
+  const counts = new Map();
+  for (let i = 0; i < N; i++) {
+    const card = pickCard(options, BIAS, () => (i + 0.5) / N);
+    counts.set(card.id, (counts.get(card.id) || 0) + 1);
+  }
+  assert.equal(counts.size, options.length, 'every member can still be pulled');
+  for (const card of options) {
+    const want = isBias(card) ? biasShare(options.length) : (1 - biasShare(options.length)) / (options.length - 1);
+    assert.ok(Math.abs(counts.get(card.id) / N - want) < 1e-4, `${card.id}: ${counts.get(card.id) / N}`);
+  }
+});
+
+test('a bias from another group, or an unknown code, changes nothing', () => {
+  const options = CARDS.filter(c => c.era === lsEra && c.rarity === 'rare');
+  for (let u = 0; u < 1; u += 0.01) {
+    const plain = pickCard(options, null, () => u);
+    assert.equal(pickCard(options, 'HN', () => u), plain);
+    assert.equal(pickCard(options, 'nope', () => u), plain);
+  }
+  const other = { ...NEW_GAME, bias: { MF: 'HN' } };
+  for (let k = 1; k <= 50; k++) assert.deepEqual(rollPack(other, lsEra, lcg(k)).pulls, rollPack(NEW_GAME, lsEra, lcg(k)).pulls);
+});
+
+test('a bias never changes rarities, so pity and refunds work the same', () => {
+  // Same rng stream: the rarities match card for card.
+  for (let k = 1; k <= 200; k++) {
+    assert.deepEqual(rarities(rollPack(biased, lsEra, lcg(k)).pulls), rarities(rollPack(NEW_GAME, lsEra, lcg(k)).pulls));
+  }
+  let state = { ...biased, coins: PACK_COST * PITY_AT };
+  for (let i = 1; i <= PITY_AT; i++) state = rollPack(state, lsEra, COMMON).state;
+  assert.equal(state.pity, 0, 'the 15th dry album still forces a lucky draw');
+});
+
+test('the biased card is the one the bias boost picks', () => {
+  // Rarity rolls first (five calls), then one call per card.
+  const seq = [0.1, 0.1, 0.1, 0.1, 0.1, 0, 0, 0, 0, 0.999];
+  let i = 0;
+  const { pulls } = rollPack(biased, lsEra, () => seq[i++]);
+  assert.ok(pulls.slice(0, 4).every(p => isBias(p.card)));
+  assert.ok(!isBias(pulls[4].card));
 });
