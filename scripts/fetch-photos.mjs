@@ -99,7 +99,7 @@ async function build(id) {
     for (const code of Object.keys(sources)) {
       const want = code === 'GRP' ? 1 : PER_MEMBER;
       const forced = cfg.overrides?.[era]?.[code] ?? [];
-      const files = (byCode[code][title(page)] ?? []).filter(f => !forced.includes(f));
+      const files = [page].flat().flatMap(p => byCode[code][title(p)] ?? []).filter(f => !forced.includes(f));
       const auto = code === 'GRP' ? files.slice(0, 1) : spread(files, want);
       const chosen = Array.from({ length: want }, (_, i) => forced[i] ?? auto[i]).filter(Boolean);
       counts.push(`${code} ${String(files.length).padStart(3)}${chosen.length < want ? '!' : ' '}`);
@@ -111,7 +111,7 @@ async function build(id) {
   console.log(`Photos found per era (! = not enough):\n${report.join('\n')}`);
 
   // Album pages the galleries link to that no era uses: handy when setting up a group or a comeback.
-  const used = new Set(Object.values(cfg.eras).map(e => title(e.page)));
+  const used = new Set(Object.values(cfg.eras).flatMap(e => [e.page].flat().map(title)));
   const other = {};
   for (const g of Object.values(byCode)) for (const [album, files] of Object.entries(g)) if (!used.has(album)) other[album] = (other[album] ?? 0) + files.length;
   const top = Object.entries(other).sort((a, b) => b[1] - a[1]).slice(0, 15);

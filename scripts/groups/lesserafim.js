@@ -11,7 +11,8 @@ export default {
   },
   group: 'LE SSERAFIM/Gallery',
 
-  // Era code → the album page that gallery captions link to, and the album's cover file.
+  // Era code → the album page that gallery captions link to (a list to pool a pre-release's photos with
+  // its album's), and the album's cover file.
   eras: {
     FL: { page: 'Fearless (LE SSERAFIM)', cover: 'LE SSERAFIM Fearless digital album cover.png' },
     AF: { page: 'Antifragile', cover: 'LE SSERAFIM Antifragile digital album cover.png' },
