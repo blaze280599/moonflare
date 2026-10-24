@@ -68,6 +68,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
   const [phase, setPhase] = useState('pack'); // pack → emerge → stack → spread
   const [box, setBox] = useState(null);
   const [packReady, setPackReady] = useState(false);
+  const [sceneLive, setSceneLive] = useState(true); // the pack canvas stays up until the wrapper has fallen away
   const [cut, setCut] = useState('none'); // none → started → done
   const [top, setTop] = useState(0);
   const [flying, setFlying] = useState([]);
@@ -108,6 +109,10 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
     sceneRef.current?.dispose();
     sceneRef.current = null;
   };
+  const retireScene = () => {
+    endScene();
+    setSceneLive(false);
+  };
 
   // The 3D pack. three.js is loaded only once a pack is opened, so the group page stays light.
   // Without WebGL the stage skips straight to the card stack.
@@ -128,15 +133,18 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
             later(() => sceneRef.current?.present(-SINK * layoutRef.current.packH), 220);
             later(() => setPhase('emerge'), 680);
           },
+          onGone: retireScene,
           onError: () => {
-            endScene();
+            retireScene();
             setPhase('stack');
           }
         });
         sceneRef.current.resize(box.w, box.h, layoutRef.current.packH);
       })
       .catch(() => {
-        if (!cancelled) setPhase('stack');
+        if (cancelled) return;
+        setSceneLive(false);
+        setPhase('stack');
       });
     return () => {
       cancelled = true;
@@ -152,7 +160,8 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
     if (packReady) ripRef.current?.focus({ preventScroll: true });
   }, [packReady]);
 
-  // The cards slide up out of the open pack, the pack drops away, and the stack settles in the middle.
+  // The cards slide up out of the open pack, the wrapper drops away, and the stack settles in the middle.
+// The wrapper keeps falling after the stack settles; the canvas lets clicks through to the cards meanwhile.
   useEffect(() => {
     if (phase !== 'emerge') return;
     const { insideY, outY, restY } = layoutRef.current;
@@ -175,9 +184,15 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
     later(() => sceneRef.current?.drop(), duration * 0.45);
     anim.onfinish = () => {
       el.style.transform = `translateY(${restY}px)`;
-      endScene();
       setPhase('stack');
+      // The wrapper is still falling; onGone retires the scene once it's off-screen. This is a backstop.
+      later(retireScene, 2500);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === 'spread') retireScene();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -411,7 +426,9 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
               </div>
             )}
 
-            {(phase === 'pack' || phase === 'emerge') && <canvas ref={canvasRef} className="absolute inset-0 z-10 size-full touch-none" />}
+            {sceneLive && (
+              <canvas ref={canvasRef} className={cn('absolute inset-0 z-10 size-full touch-none', phase !== 'pack' && 'pointer-events-none')} />
+            )}
 
             <p
               aria-live="polite"
