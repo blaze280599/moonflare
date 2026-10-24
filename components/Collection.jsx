@@ -131,8 +131,8 @@ export default function Collection() {
             <AlertDialogHeader>
               <AlertDialogTitle>Erase your whole collection?</AlertDialogTitle>
               <AlertDialogDescription>
-                Every card, your stars and your pity progress are deleted from your account, and your trade listings and offers are
-                withdrawn. You start again with {NEW_GAME.coins} stars.
+                Every card, your stars, your unopened packs and your pity progress are deleted from your account, and your trade listings and offers are
+                withdrawn. You start again with {NEW_GAME.coins} stars and {NEW_GAME.inventory.standard} standard packs.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -142,7 +142,7 @@ export default function Collection() {
                 onClick={async () => {
                   const { error } = await reset();
                   if (error) toast.error('Couldn’t reset your collection', { description: error });
-                  else toast('Collection reset', { description: `You have ${NEW_GAME.coins} stars.` });
+                  else toast('Collection reset', { description: `You have ${NEW_GAME.coins} stars and ${NEW_GAME.inventory.standard} standard packs.` });
                 }}
               >
                 Erase collection

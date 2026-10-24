@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CARDS, ERAS, RARITY } from '../lib/cards.js';
-import { BIAS_BOOST, NEW_GAME, PACK_COST, PITY_AT, RATES, biasShare, memberRates, pickCard, rollPack } from '../lib/gacha.js';
+import { GROUP_COST, STANDARD_COST } from '../lib/shop.js';
+import { BIAS_BOOST, NEW_GAME, PITY_AT, RATES, biasShare, memberRates, pickCard, rollPack } from '../lib/gacha.js';
 
 const era = ERAS[0];
 // rng values that land inside each rarity's band (RATES are cumulative in list order).
@@ -25,12 +26,12 @@ test('each rate band rolls its own rarity', () => {
   }
 });
 
-test('an album costs PACK_COST and deals five cards from its era', () => {
+test('an album deals five cards from its era, and only refunds change stars (the pack was paid for in the shop)', () => {
   const { state, pulls } = rollPack(NEW_GAME, era);
   assert.equal(pulls.length, 5);
   assert.ok(pulls.every(p => p.card.era.code === era.code));
   assert.equal(state.packs, 1);
-  assert.equal(state.coins, NEW_GAME.coins - PACK_COST + pulls.reduce((s, p) => s + p.refund, 0));
+  assert.equal(state.coins, NEW_GAME.coins + pulls.reduce((s, p) => s + p.refund, 0));
 });
 
 test('card 5 is always Rare or better', () => {
@@ -49,7 +50,7 @@ test('pity forces a lucky draw on the PITY_AT-th dry album, not before', () => {
 });
 
 test('15 dry albums in a row always end with a lucky draw', () => {
-  let state = { ...NEW_GAME, coins: PACK_COST * PITY_AT };
+  let state = NEW_GAME;
   for (let i = 1; i <= PITY_AT; i++) {
     const result = rollPack(state, era, COMMON);
     state = result.state;
@@ -80,15 +81,16 @@ test('rollPack does not mutate the state passed in', () => {
   assert.deepEqual(start, copy);
 });
 
-// Economy guard: once a player owns everything, albums must still cost stars on average.
-test('an all-duplicate album refunds well under its cost', () => {
+// Economy guard: once a player owns everything, packs must still cost stars on average, even the cheapest.
+test('an all-duplicate album refunds well under the cheapest pack', () => {
   const p = Object.fromEntries(RATES.map(r => [r.rarity, r.pct / 100]));
   const refund = r => RARITY[r].refund;
   const perCard = RATES.reduce((s, r) => s + p[r.rarity] * refund(r.rarity), 0);
   // Card 5 turns a Common roll into a Rare.
   const lastCard = perCard - p.common * refund('common') + p.common * refund('rare');
   const expected = 4 * perCard + lastCard;
-  assert.ok(expected <= PACK_COST * 0.6, `expected refund ${expected.toFixed(1)} ★ per ${PACK_COST} ★ album`);
+  assert.ok(expected <= STANDARD_COST * 0.6, `expected refund ${expected.toFixed(1)} ★ per ${STANDARD_COST} ★ pack`);
+  assert.ok(GROUP_COST > STANDARD_COST, 'choosing the group costs more than a random pack');
 });
 
 // Pick your bias. The user's hard limit is a 1-2 percentage point boost.
@@ -149,7 +151,7 @@ test('a bias never changes rarities, so pity and refunds work the same', () => {
   for (let k = 1; k <= 200; k++) {
     assert.deepEqual(rarities(rollPack(biased, lsEra, lcg(k)).pulls), rarities(rollPack(NEW_GAME, lsEra, lcg(k)).pulls));
   }
-  let state = { ...biased, coins: PACK_COST * PITY_AT };
+  let state = biased;
   for (let i = 1; i <= PITY_AT; i++) state = rollPack(state, lsEra, COMMON).state;
   assert.equal(state.pity, 0, 'the 15th dry album still forces a lucky draw');
 });

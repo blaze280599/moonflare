@@ -9,7 +9,8 @@ import { useGameContext } from '@/components/GameProvider';
 import { CARD_KIND } from '@/components/PackInfo';
 import { CARD_BY_ID, CARDS, ERAS, GROUPS, GROUP_BY_SLUG, foilFor } from '@/lib/cards';
 import { getArt, getBack, getCover } from '@/lib/art';
-import { DAILY_STARS, PACK_COST, PITY_AT, RATES } from '@/lib/gacha';
+import { DAILY_STARS, PITY_AT, RATES } from '@/lib/gacha';
+import { GROUP_COST, STANDARD_COST } from '@/lib/shop';
 import { RARITY_DOT } from '@/lib/rarity-styles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,18 +24,18 @@ const FEATURED = GROUP_BY_SLUG['le-sserafim'];
 const STEPS = [
   {
     icon: Gift,
-    title: 'Claim your stars',
-    body: `${DAILY_STARS} free stars every day, reset at your midnight. Each album costs ${PACK_COST} ★.`
+    title: 'Claim your daily reward',
+    body: `${DAILY_STARS} stars and a free standard pack every day, reset at your midnight. Standard packs can be any group.`
   },
   {
     icon: Package,
-    title: 'Open an album',
-    body: 'Tear off the shrink-wrap and flip five photocards from one comeback era, one at a time.'
+    title: 'Open a pack',
+    body: `Want a certain group? Their pack is ${GROUP_COST} ★ in the shop (standard packs are ${STANDARD_COST} ★). Cut it open and flip five photocards from one album.`
   },
   {
     icon: BookOpen,
     title: 'Fill your binder',
-    body: 'New cards go into your binder. Duplicates turn back into stars toward the next album.'
+    body: 'New cards go into your binder. Duplicates turn back into stars toward the next pack.'
   }
 ];
 
@@ -55,7 +56,7 @@ export default function Landing() {
                 {FEATURED.name} just joined the club
               </Badge>
               <h1 className="font-heading text-[clamp(2.5rem,6vw,4.25rem)] leading-[1.02] font-semibold tracking-tight text-balance">
-                Open an album, chase your <span className="text-primary">bias</span>.
+                Open a pack, chase your <span className="text-primary">bias</span>.
               </h1>
               <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
                 A photocard club for collecting K-pop PCs the way the hobby really works. Album PCs are plain, selfies glitter, POBs
@@ -64,7 +65,7 @@ export default function Landing() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-11 px-5">
-                <Link href={`/groups/${FEATURED.slug}`}>
+                <Link href="/shop">
                   Start opening
                   <ArrowRight />
                 </Link>
@@ -192,7 +193,7 @@ export default function Landing() {
           <SectionHeading
             eyebrow="Rarity"
             title="Five tiers, straight from the hobby"
-            body={`Odds are per card and the same for every album. A lucky draw is guaranteed within ${PITY_AT} albums.`}
+            body={`Odds are per card and the same for every album. A lucky draw is guaranteed within ${PITY_AT} packs.`}
           />
           <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {RATES.map(r => (

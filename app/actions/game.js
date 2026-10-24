@@ -1,10 +1,10 @@
 'use server';
 
 import { getRandomValues } from 'node:crypto';
-import { ERAS, GROUPS } from '@/lib/cards';
-import { canOpenEra } from '@/lib/events';
+import { GROUPS } from '@/lib/cards';
 import { applyToploader } from '@/lib/deco';
-import { DAILY_STARS, PACK_COST, rollPack } from '@/lib/gacha';
+import { DAILY_STARS, rollPack } from '@/lib/gacha';
+import { buyPack as buyOne, givePacks, packFor, pickAlbum, takePack } from '@/lib/shop';
 import { dateInZone, isTimeZone, mergeImport, resetState, rowToState, sanitizeImport, stateToRow } from '@/lib/save';
 import { adminConfigured, createAdminClient } from '@/lib/supabase/admin';
 import { getPlayer } from '@/lib/supabase/server';
@@ -54,17 +54,28 @@ async function withPlayer(run) {
   }
 }
 
-export async function openPack(eraCode) {
-  const era = ERAS.find(e => e.code === eraCode);
-  if (!era) return { error: 'That album doesn’t exist.' };
-  // Event albums open only inside their window, by the server's clock. The browser's countdown is just a hint.
-  if (!canOpenEra(era, Date.now())) return { error: 'event_closed' };
+// Buys one pack into the player's inventory. Event album packs sell only inside their window, by the server's clock.
+export async function buyPack(kind) {
+  const pack = packFor(kind);
+  if (!pack) return { error: 'That pack doesn’t exist.' };
+  return withPlayer(player => updateSave(player.id, state => buyOne(state, pack, Date.now())));
+}
+
+// Opens one pack from the inventory, or with `buy`, buys one and opens it straight away (the stage's
+// "Buy another"). The server picks the album, then rolls it. An event pack bought in time opens any time.
+export async function openPack(kind, { buy = false } = {}) {
+  const pack = packFor(kind);
+  if (!pack) return { error: 'That pack doesn’t exist.' };
   return withPlayer(player =>
     updateSave(player.id, state => {
-      if (state.coins < PACK_COST) return { error: 'not_enough_stars' };
-      const result = rollPack(state, era, rng);
+      const bought = buy ? buyOne(state, pack, Date.now()) : { state };
+      if (bought.error) return bought;
+      const taken = takePack(bought.state, kind);
+      if (taken.error) return taken;
+      const era = pickAlbum(pack, rng);
+      const result = rollPack(taken.state, era, rng);
       // Card objects link back to their era and group, so send ids and let the browser look them up.
-      return { state: result.state, pulls: result.pulls.map(p => ({ id: p.card.id, isNew: p.isNew, refund: p.refund })) };
+      return { state: result.state, era: era.code, pulls: result.pulls.map(p => ({ id: p.card.id, isNew: p.isNew, refund: p.refund })) };
     })
   );
 }
@@ -90,7 +101,7 @@ export async function claimDaily() {
     const today = dateInZone(new Date(), profile?.timezone);
     return updateSave(player.id, state => {
       if (state.lastDaily === today) return { error: 'already_claimed' };
-      return { state: { ...state, coins: state.coins + DAILY_STARS, lastDaily: today } };
+      return { state: { ...givePacks(state, 'standard'), coins: state.coins + DAILY_STARS, lastDaily: today } };
     });
   });
 }

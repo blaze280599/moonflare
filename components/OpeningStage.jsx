@@ -5,8 +5,7 @@ import { BookOpen, Layers, Loader2, Scissors, Volume2, VolumeOff, X } from 'luci
 import { cn } from '@/lib/utils';
 import HoloCard from '@/components/HoloCard/HoloCard';
 import { RARITY, foilFor } from '@/lib/cards';
-import { PACK, getArt, getBack } from '@/lib/art';
-import { PACK_COST } from '@/lib/gacha';
+import { PACK, getArt, getBack, wrapperFor } from '@/lib/art';
 import { celebrate, sparkle } from '@/lib/celebrate';
 import { RARITY_BADGE } from '@/lib/rarity-styles';
 import { playRip, playSparkle, playTear, setSoundOn, unlockAudio } from '@/lib/sound';
@@ -66,8 +65,11 @@ const captionFor = (era, { card, isNew, refund }) => (
 
 // Full-screen album opening: tear the 3D pack open (lib/pack3d.js), the cards slide out into a stack,
 // then flip each card and swipe it away to see the next. Ends on a spread of all five.
-// Remount with a new `key` for each album so the state starts fresh.
-export default function OpeningStage({ era, pulls, canAffordAnother, opening, onOpenAnother, onInspect, onGoToBinder, onClose }) {
+// Remount with a new `key` for each album so the state starts fresh. `pack` is the shop pack being opened
+// (lib/shop.js), which the wrapper shows; `era` is the album the server picked, which the cards come from.
+// It stays hidden behind the pack's name until the cards are out. `another` is { label, onClick } for the
+// spread's button, or null to leave it out.
+export default function OpeningStage({ pack, era, pulls, another, opening, onInspect, onGoToBinder, onClose }) {
   // Reveal the rarest card last, so each pack builds up to its best pull. Array sort is stable.
   const [deck] = useState(() => [...pulls].sort((a, b) => RARITY[a.card.rarity].rank - RARITY[b.card.rarity].rank));
   const [reducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -133,7 +135,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
       .then(({ PackScene }) => {
         if (cancelled || sceneRef.current) return;
         sceneRef.current = new PackScene(canvasRef.current, {
-          era,
+          wrapper: wrapperFor(pack),
           cards: deck.map(({ card }) => ({ art: getArt(card), back: getBack(era) })),
           reducedMotion,
           onReady: () => setPackReady(true),
@@ -348,11 +350,17 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
 
   return (
     // Audio may only start from a user gesture, so the first press anywhere on the stage unlocks it.
-    <div className="stage" role="dialog" aria-modal="true" aria-label="Album opening" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
+    <div className="stage" role="dialog" aria-modal="true" aria-label="Pack opening" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate font-mono text-xs tracking-wider text-white/55 uppercase">
-          {era.group.name} · {era.name}
-          <span className="max-sm:hidden"> · {era.sub}</span>
+          {phase === 'pack' ? (
+            pack.name
+          ) : (
+            <>
+              {era.group.name} · {era.name}
+              <span className="max-sm:hidden"> · {era.sub}</span>
+            </>
+          )}
         </span>
         <div className="flex shrink-0 items-center gap-1">
           <StageToggle label="Sound" pressed={soundOn} onPressedChange={toggleSound}>
@@ -386,10 +394,12 @@ export default function OpeningStage({ era, pulls, canAffordAnother, opening, on
             </div>
             <p className="mt-5 font-mono text-xs tracking-wider text-white/55 uppercase">Tap a card for a closer look</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-              <Button size="lg" className="px-4" disabled={!canAffordAnother || opening} onClick={() => onOpenAnother(era)}>
-                {opening && <Loader2 className="animate-spin" />}
-                {opening ? 'Opening…' : `Open another · ${PACK_COST} ★`}
-              </Button>
+              {another && (
+                <Button size="lg" className="px-4" disabled={another.disabled || opening} onClick={another.onClick}>
+                  {opening && <Loader2 className="animate-spin" />}
+                  {opening ? 'Opening…' : another.label}
+                </Button>
+              )}
               <Button size="lg" variant="ghost" className="px-4 text-white hover:bg-white/10" onClick={() => onGoToBinder(era)}>
                 <BookOpen />
                 Go to binder

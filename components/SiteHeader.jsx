@@ -8,10 +8,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getCover } from '@/lib/art';
-import { DAILY_STARS, PACK_COST } from '@/lib/gacha';
+import { DAILY_STARS } from '@/lib/gacha';
+import { STANDARD_COST } from '@/lib/shop';
 import { signOut } from '@/app/auth/actions';
 import { useGameContext } from '@/components/GameProvider';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group';
 import {
@@ -45,14 +47,20 @@ export default function SiteHeader({ player }) {
   const [signingOut, startSignOut] = useTransition();
   const onSignOut = () => startSignOut(() => signOut());
   const { state, loaded, artReady, claimDaily, dailyClaimed } = useGameContext();
+  const unopened = Object.values(state.inventory || {}).reduce((sum, n) => sum + n, 0);
+  const packCount = loaded && unopened > 0 && (
+    <Badge variant="secondary" className="tabular-nums" aria-label={`${unopened} unopened packs`}>
+      {unopened}
+    </Badge>
+  );
 
   const [claiming, setClaiming] = useState(false);
   const onDaily = async () => {
     setClaiming(true);
     const { error } = await claimDaily();
     setClaiming(false);
-    if (!error) toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
-    else if (error !== 'already_claimed') toast.error('Couldn’t claim your stars', { description: error });
+    if (!error) toast.success(`+${DAILY_STARS} stars and a standard pack`, { description: 'Open it in the shop. Come back tomorrow for more.' });
+    else if (error !== 'already_claimed') toast.error('Couldn’t claim your daily reward', { description: error });
   };
 
   return (
@@ -83,6 +91,14 @@ export default function SiteHeader({ player }) {
               </NavigationMenuContent>
             </NavigationMenuItem>
             <NavigationMenuItem>
+              <NavigationMenuLink asChild active={isActive(pathname, '/shop')} className={cn(navigationMenuTriggerStyle(), 'gap-1.5')}>
+                <Link href="/shop">
+                  Shop
+                  {packCount}
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
               <NavigationMenuLink asChild active={isActive(pathname, '/collection')} className={navigationMenuTriggerStyle()}>
                 <Link href="/collection">Collection</Link>
               </NavigationMenuLink>
@@ -104,14 +120,14 @@ export default function SiteHeader({ player }) {
                   {loaded ? state.coins.toLocaleString() : '—'}
                 </ButtonGroupText>
               </TooltipTrigger>
-              <TooltipContent>Stars buy albums. Duplicate cards give stars back.</TooltipContent>
+              <TooltipContent>Stars buy packs in the shop. Duplicate cards give stars back.</TooltipContent>
             </Tooltip>
             <Button
               size="lg"
               className="px-3"
               disabled={!loaded || dailyClaimed || claiming}
               onClick={onDaily}
-              aria-label={dailyClaimed ? 'Daily stars claimed today' : `Claim ${DAILY_STARS} daily stars`}
+              aria-label={dailyClaimed ? 'Daily reward claimed today' : `Claim ${DAILY_STARS} daily stars and a standard pack`}
             >
               {dailyClaimed ? <Check /> : <Gift />}
               <span className="max-sm:hidden">{dailyClaimed ? 'Claimed today' : `Daily ${DAILY_STARS}`}</span>
@@ -173,6 +189,10 @@ export default function SiteHeader({ player }) {
                   </MobileLink>
                 ))}
                 <Separator className="my-2" />
+                <MobileLink href="/shop" pathname={pathname}>
+                  Shop
+                  {packCount}
+                </MobileLink>
                 <MobileLink href="/collection" pathname={pathname}>
                   Collection
                 </MobileLink>
@@ -203,7 +223,7 @@ export default function SiteHeader({ player }) {
                 </div>
               )}
               <p className={cn('px-4 pb-4 text-xs text-muted-foreground', !player && 'mt-auto')}>
-                {DAILY_STARS} free stars every day. Albums cost {PACK_COST} ★.
+                {DAILY_STARS} free stars and a standard pack every day. Standard packs cost {STANDARD_COST} ★.
               </p>
             </SheetContent>
           </Sheet>

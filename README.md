@@ -10,7 +10,8 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 ### Core loop
 
 1. **Earn currency.** Daily login, small minigames, or finishing a collection set.
-2. **Buy an album pack.** Each album is a pack themed on a comeback era, like Summer Era or Debut Era.
+2. **Buy a pack.** Every player gets standard packs, which can land on any group. To choose the group, buy that group's
+   pack in the shop. Either way the pack opens as one album, themed on a comeback era. *(Built: see [Shop](#shop).)*
 3. **Open it.** Tear the foil pack open, watch the cards slide out, then flip them one at a time. The reveal is where most of the fun is.
 4. **Collect, trade and show off.** Fill binders, swap duplicates, display your favorites.
 
@@ -31,7 +32,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Decorate your toploader.** Sticker and deco customization for favorite cards. This is huge in the real hobby. *(Built: put any owned card in a tinted toploader and place, move, resize and turn up to 16 stickers from a built-in set. Decorated cards show in their toploader in the binder.)*
 - **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users. *(Built: see [Trading](#trading).)*
 - **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back. *(Built: see [Comeback events](#comeback-events). Event albums use the normal pull rates and pity.)*
-- **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
+- **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 packs, whichever kind. The original idea was an Epic every 10 packs.)*
 - **Player profiles.** A page per player to show off. *(Built: see [Player profiles](#player-profiles).)*
 
 ### Tech stack
@@ -59,17 +60,47 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Sound and sparkle: the cut rips louder and brighter the faster you drag, and Rare-or-better reveals chime and sparkle (more for rarer cards). A switch on the opening stage turns sound off, remembered per browser
 - [x] Toploader decorating: a decorate mode in the card dialog, 16 built-in SVG stickers, 6 tints, saved per account
 - [x] Player profiles: a page per player with a picture, banner, bio, favourites, a showcase of up to 9 cards, stats, a bias wall and badges
-- [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
-- [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
+- [x] Daily reward: 200 stars and a free standard pack a day, resetting at midnight in the time zone the player signed up from
+- [x] Comeback events: limited-time albums with a countdown, sold in the shop only inside their window
+- [x] Shop: standard packs (any group) and group packs (one group, random album), bought with stars, kept until opened
 - [x] Trading: list a card with criteria for what you want back, offer matching cards, accept or decline, with escrow (see [Trading](#trading))
+
+### Shop
+
+`/shop` sells booster packs for stars. A pack you buy goes into your packs (`saves.inventory`), and you open it
+whenever you like, from the shop or the group's page. Every pack opens as one album: five cards with the usual card
+odds, card-5 guarantee, pity, refunds and bias boost. The pack only decides which album.
+
+| Pack | Price | Album |
+|---|---|---|
+| Standard | 100 ★ | Picks a group, every group equally, then one of its albums, every album equally |
+| Group (one per group) | 150 ★ | One of that group's albums, every album equally |
+| Event album | 150 ★ | That album only, sold while its event is live |
+
+- **Why standard packs pick the group first:** picking from all albums at once would favour groups with more of them
+  (aespa has 8, NewJeans 4). Each pack's "Album odds" dialog shows the exact shares, built from `albumOdds()`, which
+  `pickAlbum()` on the server follows; `tests/shop.test.js` checks they match.
+- **Random packs skip event albums,** so an event's cards come only from its own pack. An event pack bought in time
+  still opens after the event ends.
+- **Economy.** The daily reward is 200 ★ and a free standard pack (worth 300 ★ together, the old daily amount). A new
+  account (and a Reset) starts with 300 ★ and two standard packs. An album of all duplicates refunds about 49 ★, under
+  half the cheapest pack, so a finished collection still costs stars. Choosing the group costs 50 ★ more than leaving
+  it to chance; trading is the other way to get a group's cards.
+- **On the opening stage,** the pack wears its own wrapper (a standard pack tiles each group's newest cover, a group pack
+  its albums' covers), and the album's name shows only once the cards are out. The spread's button opens another of the
+  same pack if you have one, or buys one and opens it.
+
+Pack kinds (`standard`, `group:<code>`, `album:<era code>`) are save keys in `saves.inventory`: never rename one.
+The rules live in `lib/shop.js`; `buyPack` and `openPack` in `app/actions/game.js` run them on the server.
 
 ### Comeback events
 
 An event album is an ordinary entry in `ERAS` (`lib/cards.js`) with an `event: { starts, ends, blurb }` window, written as
 ISO timestamps with an explicit offset. Its cards follow the usual layout, rates and pity. While it's live, a banner with a
-countdown shows on the landing page and the group's page, and the album sits in the group's grid with a Limited badge. Before
+countdown shows on the landing page and the group's page, the album sits in the group's grid with a Limited badge, and its
+pack is on sale in the shop (and on the group's page). Before
 it starts it's hidden everywhere. After it ends, the album shows as closed ("Event ended") and owned cards stay in the binder
-with a sparkle marking them event-exclusive. `openPack` checks the window with the server's clock; the browser's countdown
+with a sparkle marking them event-exclusive. `buyPack` checks the window with the server's clock; the browser's countdown
 is only a display.
 
 To run a new event, add an era with a new code, an `event` window and its photos, as for any era. No event is scheduled
@@ -200,10 +231,10 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 
 - `components/HoloCard/` holds the React Bits HoloCard (JS-CSS variant). It has four small changes, each marked with a comment:
   a controlled `flipped` prop, an `onClick` prop, starting face-down without a flip animation, and releasing the WebGL context on unmount.
-- Pages: `/` is the landing page (`components/Landing.jsx`), `/groups/<slug>` is one group's albums (`components/GroupPage.jsx`), and `/collection` is the binder (`components/Collection.jsx`).
-- `components/SiteHeader.jsx` is the nav bar shown on every page: a shadcn Navigation Menu with a Groups dropdown, plus stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
+- Pages: `/` is the landing page (`components/Landing.jsx`), `/shop` sells and opens packs (`components/ShopPage.jsx`, one `PackTile.jsx` per pack), `/groups/<slug>` is one group's albums and pack (`components/GroupPage.jsx`), and `/collection` is the binder (`components/Collection.jsx`).
+- `components/SiteHeader.jsx` is the nav bar shown on every page: a shadcn Navigation Menu with a Groups dropdown, plus stars and the daily button. `components/GameProvider.jsx` shares the save between pages and hosts the opening stage, so any page can open a pack.
 - `components/OpeningStage.jsx` runs an opening: the 3D pack, the cards sliding out of it, the stack you flip and swipe through, and the spread of all five at the end.
-- `lib/pack3d.js` is the 3D booster pack (three.js, loaded only when a pack opens): a puffy foil pillow with rounded shoulders, pinch wrinkles fanning into rippled, slightly curled seals (seeded per era, so each pack crinkles its own way), and a dotted cut line. Press on the line and drag along it: the cut grows only from its own ends, so it has to be traced, and once it reaches a side the strip above it peels up, then flies off when the cut spans the pack. Pressing anywhere else on the pack grabs it to turn it around; it stays nearly in place, giving only a little toward the pointer (springs bring it back). The five pulls sit inside the pack (art facing the back, with the first card to be revealed at the back, so a peek only shows the card you would flip first), and are hidden once the DOM stack takes over. Plus foil glitter. Its wrapper art is drawn by `getPackArt()` in `lib/art.js` from the album cover.
+- `lib/pack3d.js` is the 3D booster pack (three.js, loaded only when a pack opens): a puffy foil pillow with rounded shoulders, pinch wrinkles fanning into rippled, slightly curled seals (seeded per era, so each pack crinkles its own way), and a dotted cut line. Press on the line and drag along it: the cut grows only from its own ends, so it has to be traced, and once it reaches a side the strip above it peels up, then flies off when the cut spans the pack. Pressing anywhere else on the pack grabs it to turn it around; it stays nearly in place, giving only a little toward the pointer (springs bring it back). The five pulls sit inside the pack (art facing the back, with the first card to be revealed at the back, so a peek only shows the card you would flip first), and are hidden once the DOM stack takes over. Plus foil glitter. Its wrapper art is drawn by `getPackArt()` in `lib/art.js` from the pack's covers (`wrapperFor()`).
 - `lib/sound.js` makes the game's sounds with the Web Audio API. Audio starts only after a press on the opening stage, and the stage's sound switch is kept in localStorage (`lib/usePref.js`). `sparkle()` in `lib/celebrate.js` draws the stars over a revealed card in plain DOM and CSS.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview. For owned cards it also opens decorate mode (`components/ToploaderEditor.jsx`).
@@ -211,11 +242,11 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 - `lib/cards.js` is the card catalog (groups, eras, cards) and the foil each rarity gets.
 - `lib/photos/<group>.js` lists each group's photo URLs. They're generated by `scripts/fetch-photos.mjs` from `scripts/groups/<group>.js`.
 - `tests/cards.test.js` checks the catalog: unique ids and codes, four cards per member plus a group special in each era, a photo for every card, and that MOONFLARE's retired codes stay unused.
-- `lib/gacha.js` holds pull rates, pity, the bias boost (`BIAS_BOOST`, `memberRates()`) and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns about half its cost.
+- `lib/gacha.js` holds pull rates, pity, the bias boost (`BIAS_BOOST`, `memberRates()`) and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns under half the cheapest pack. Pack prices, album odds and the inventory are in `lib/shop.js`.
 - `tests/gacha.test.js` covers the odds, pity and economy. Run it with `npm test`.
 - `lib/events.js` has the comeback-event helpers (`eventPhase`, `canOpenEra`, countdown text), tested in `tests/events.test.js`. `components/EventBanner.jsx` is the banner and countdown badge; `lib/useNow.js` ticks the clock for them.
 - `lib/art.js` returns the photo URLs for cards and covers, and draws card backs and pack wrappers on canvas.
-- `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (open an album, claim the daily stars, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
+- `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (buy or open a pack, claim the daily reward, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
 - `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`. The trade tables (`trade_listings`, `trade_offers`) have no client grants at all: the board is read on the server.
 - `/trade` is `components/TradeBoard.jsx` (tabs for the board, your listings, your offers and history), with `ListCardDialog.jsx`, `MakeOfferDialog.jsx` and `TradeCardThumb.jsx` (the face-down rule). `lib/trade.js` has the criteria and matching rules, tested in `tests/trade.test.js`; `lib/supabase/trades.js` reads the board; `app/actions/trade.js` holds the actions.
 
