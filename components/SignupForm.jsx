@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CircleAlert, Loader2, MailCheck } from 'lucide-react';
 import { signUp } from '@/app/auth/actions';
@@ -15,6 +15,9 @@ export default function SignupForm({ configured }) {
   const [state, action, pending] = useActionState(signUp, null);
   const errors = state?.errors || {};
   const values = state?.values || {};
+  // Read after mount: the server doesn't know the browser's zone, and reading it during render would mismatch.
+  const [timeZone, setTimeZone] = useState('');
+  useEffect(() => setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || ''), []);
 
   if (state?.sentTo) {
     return (
@@ -48,6 +51,8 @@ export default function SignupForm({ configured }) {
       <CardContent>
         {!configured && <NotConfigured />}
         <form action={action} key={key}>
+          {/* The daily reward resets at the player's midnight, so the account remembers their time zone. */}
+          <input type="hidden" name="timezone" value={timeZone} />
           <FieldGroup>
             {state?.error && (
               <Alert variant="destructive">
