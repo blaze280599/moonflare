@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import Binder from '@/components/Binder';
 import { useGameContext } from '@/components/GameProvider';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
 import { getCover } from '@/lib/art';
+import { eventPhase } from '@/lib/events';
+import { useNow } from '@/lib/useNow';
 import { NEW_GAME } from '@/lib/gacha';
 import {
   Breadcrumb,
@@ -36,7 +38,9 @@ import {
 // Overall progress per album, then the binder for the chosen album.
 export default function Collection() {
   const { state, loaded, artReady, reset, inspect, binderEra, setBinderEra } = useGameContext();
-  const total = CARDS.filter(c => state.owned[c.id]).length;
+  const now = useNow(60_000);
+  const listed = CARDS.filter(c => eventPhase(c.era, now) !== 'upcoming');
+  const total = listed.filter(c => state.owned[c.id]).length;
 
   const pickEra = era => {
     setBinderEra(era);
@@ -63,7 +67,7 @@ export default function Collection() {
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Your collection</h1>
           {loaded ? (
             <p className="text-muted-foreground">
-              {total} of {CARDS.length} photocards collected · {state.packs} album{state.packs === 1 ? '' : 's'} opened
+              {total} of {listed.length} photocards collected · {state.packs} album{state.packs === 1 ? '' : 's'} opened
             </p>
           ) : (
             <Skeleton className="h-6 w-72 max-w-full" />
@@ -75,7 +79,7 @@ export default function Collection() {
             <section key={g.code} className="space-y-3">
               <h2 className="text-sm font-medium text-muted-foreground">{g.name}</h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-                {ERAS.filter(e => e.group === g).map(era => {
+                {ERAS.filter(e => e.group === g && eventPhase(e, now) !== 'upcoming').map(era => {
                   const cards = CARDS.filter(c => c.era === era);
                   const owned = cards.filter(c => state.owned[c.id]).length;
                   const active = binderEra.code === era.code;
@@ -92,7 +96,10 @@ export default function Collection() {
                           {artReady ? <img alt="" src={getCover(era)} /> : <Skeleton className="size-full" />}
                         </ItemMedia>
                         <ItemContent className="min-w-0 gap-1.5">
-                          <ItemTitle className="truncate">{era.name}</ItemTitle>
+                          <ItemTitle className="w-full min-w-0">
+                            <span className="truncate">{era.name}</span>
+                            {era.event && <Sparkles className="size-3.5 shrink-0 text-primary" aria-label="Limited event album" />}
+                          </ItemTitle>
                           <div className="flex items-center gap-2">
                             <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
                             <span className="text-[11px] text-muted-foreground tabular-nums">
