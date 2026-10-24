@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, Package } from 'lucide-react';
+import { Heart, Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import BiasPicker from '@/components/BiasPicker';
 import OpeningStage from '@/components/OpeningStage';
 import PackInfo from '@/components/PackInfo';
 import { useGameContext } from '@/components/GameProvider';
@@ -102,6 +103,7 @@ export default function GroupPage({ slug }) {
                   {/* Member colors are data, so they're set inline rather than as theme tokens. */}
                   <span className="size-2 rounded-full" style={{ background: m.color }} />
                   {m.name}
+                  {state.bias?.[group.code] === m.code && <Heart className="fill-primary text-primary" aria-label="Your bias" />}
                 </Badge>
               </li>
             ))}
@@ -148,7 +150,8 @@ export default function GroupPage({ slug }) {
           </div>
 
           <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start">
-            <PackInfo />
+            <BiasPicker group={group} />
+            <PackInfo group={group} />
             <p className="px-1 text-xs text-muted-foreground">Every album holds five photocards from that era.</p>
           </aside>
         </div>

@@ -52,7 +52,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/auth/confirm/route.js` | Where the confirmation and password reset emails' links land; starts the session, then goes to `next` |
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
 | `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
-| `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
+| `app/actions/game.js` | Server Actions that change a save: `openPack`, `setBias`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
 | `supabase/migrations/` | Database schema: `profiles`, `saves`, RLS, the new-user trigger. Apply new migrations through the Supabase MCP server or CLI, and commit the SQL |
 | `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
@@ -62,7 +62,8 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/SiteFooter.jsx` | Disclaimer and footer links |
 | `components/Landing.jsx` | Landing page: hero HoloCard, how it works, groups, rarity tiers |
 | `components/GroupPage.jsx` | A group's album grid, pity/odds sidebar, and the opening stage; owns the Escape handling |
-| `components/PackInfo.jsx` | Pity progress and the pull-rate table, built from `RATES` |
+| `components/PackInfo.jsx` | Pity progress, the pull-rate table built from `RATES`, and per-member odds from `memberRates()` |
+| `components/BiasPicker.jsx` | Pick your bias for one group (shadcn Select), saved through `setBias` |
 | `components/Collection.jsx` | Per-album progress tiles, the Binder and Reset collection |
 | `components/OpeningStage.jsx` | Full-screen album opening: tear the 3D pack, cards slide out into a stack, flip and swipe each one, then a spread of all five |
 | `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, click-and-drag cutting along the line, grab to turn it (it barely moves), springs, the flying strip and glitter |
@@ -125,6 +126,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Password reset.** `/forgot-password` is public and guest-only; it always shows the same "if that email has an account" screen, so it can't be used to find players (Supabase also answers unknown emails with a success). The emailed link goes to `/auth/confirm?next=/reset-password`, which signs the player in. `/reset-password` is deliberately *not* in `PUBLIC`: it needs that session, and the account menu's Change password uses the same page. A dead link goes back to `/forgot-password?error=link`. The `?next=` in the link only survives if the Supabase redirect allowlist matches it (`…/auth/confirm**`, see README "Run it"); otherwise Supabase quietly sends the player to the bare Site URL. Don't test by spamming reset emails: the built-in mailer sends only a few an hour.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
+- **The bias boost picks the member, never the rarity.** `pickCard()` in `lib/gacha.js` gives the bias `BIAS_BOOST` (2) extra percentage points of each member rarity and uses one `rng()` call either way, so rarity odds, pity and refunds are unchanged and rolls without a bias are identical to before. The user's hard limit is 1–2 points; `tests/gacha.test.js` enforces it. Show odds through `memberRates()`, never hand-computed numbers. `saves.bias` is `{ groupCode: memberCode }`; Reset keeps it.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
@@ -157,6 +159,5 @@ If you can't verify something (no browser available, say), state that in the com
 The README's Direction section lists planned features. Notes for the likely next ones:
 
 - **Trading** → Supabase (a trades table, written only by Server Actions like the save), deployed on Vercel. Move cards between two saves in one transaction (a Postgres function called with the secret key) so neither side can lose a card on a clash.
-- **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
 - **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.

@@ -1,7 +1,7 @@
 'use server';
 
 import { getRandomValues } from 'node:crypto';
-import { ERAS } from '@/lib/cards';
+import { ERAS, GROUPS } from '@/lib/cards';
 import { DAILY_STARS, PACK_COST, rollPack } from '@/lib/gacha';
 import { dateInZone, isTimeZone, mergeImport, resetState, rowToState, sanitizeImport, stateToRow } from '@/lib/save';
 import { adminConfigured, createAdminClient } from '@/lib/supabase/admin';
@@ -61,6 +61,21 @@ export async function openPack(eraCode) {
       const result = rollPack(state, era, rng);
       // Card objects link back to their era and group, so send ids and let the browser look them up.
       return { state: result.state, pulls: result.pulls.map(p => ({ id: p.card.id, isNew: p.isNew, refund: p.refund })) };
+    })
+  );
+}
+
+// Pick your bias: one member per group (a member code), or null to clear it. rollPack reads it from the save.
+export async function setBias(groupCode, memberCode) {
+  const group = GROUPS.find(g => g.code === groupCode);
+  if (!group) return { error: 'That group doesn’t exist.' };
+  if (memberCode !== null && !group.members.some(m => m.code === memberCode)) return { error: 'That member isn’t in this group.' };
+  return withPlayer(player =>
+    updateSave(player.id, state => {
+      const bias = { ...state.bias };
+      if (memberCode) bias[group.code] = memberCode;
+      else delete bias[group.code];
+      return { state: { ...state, bias } };
     })
   );
 }

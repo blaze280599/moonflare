@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PITY_AT, RATES } from '@/lib/gacha';
+import { ERAS } from '@/lib/cards';
+import { BIAS_BOOST, PITY_AT, RATES, memberRates } from '@/lib/gacha';
 import { RARITY_DOT } from '@/lib/rarity-styles';
 import { useGameContext } from '@/components/GameProvider';
 import { Button } from '@/components/ui/button';
@@ -17,10 +18,12 @@ export const CARD_KIND = { common: 'Album PC', rare: 'Selfie PC', epic: 'POB', l
 // Built from RATES in lib/gacha.js so the tables can't drift from the real odds.
 const PULL_RATES = RATES.map(r => ({ rarity: r.rarity, card: CARD_KIND[r.rarity], rate: `${r.pct}%` }));
 
-// Pity progress and the pull-rate table, shown next to the albums.
-export default function PackInfo({ defaultOpen = false }) {
+// Pity progress and the pull-rate table, shown next to the albums. With a `group`, it also lists each
+// member's per-card odds with the player's bias applied, from memberRates() (the same shares rollPack uses).
+export default function PackInfo({ group, defaultOpen = false }) {
   const { state } = useGameContext();
   const pityLeft = PITY_AT - state.pity;
+  const members = group ? memberRates(ERAS.find(e => e.group === group), state.bias?.[group.code]) : [];
 
   return (
     <Card size="sm">
@@ -65,9 +68,31 @@ export default function PackInfo({ defaultOpen = false }) {
                 ))}
               </TableBody>
             </Table>
+            {members.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead className="text-right">Per card</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {members.map(({ member, pct, isBias }) => (
+                    <TableRow key={member.code}>
+                      <TableCell className={cn(isBias && 'font-medium')}>
+                        <span className="mr-2 inline-block size-2 rounded-full" style={{ background: member.color }} />
+                        {member.name}
+                        {isBias && <Heart className="ml-1.5 inline size-3 fill-primary text-primary" aria-label="Your bias" />}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{pct.toFixed(2)}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
             <p className="text-xs text-muted-foreground">
               Card 5 in every album is Rare or better. A lucky draw is guaranteed by your {PITY_AT}th album without one. Duplicates
-              turn into stars.
+              turn into stars.{group && ` Your bias gets ${BIAS_BOOST} points more of each member card, taken evenly from the others; group specials belong to no one.`}
             </p>
           </CollapsibleContent>
         </Collapsible>
