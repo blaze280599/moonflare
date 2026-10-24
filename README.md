@@ -22,7 +22,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 | Rare | Selfie PC | Glossy shine | Selfie PC, light glitter foil |
 | Epic | Pre-order benefit (POB) | Holographic shimmer that follows the mouse or tilt | POB, shards / swirl / rainbow foil |
 | Legendary | Lucky draw / fansign PC | Animated, signed, with a glitter border | Lucky draw, stars / cosmos / bursts foil, gold signature |
-| Mythic | 1-of-1 "misprint" or "B-side" | Full animated card with sound | Group special, gold foil (no animation or sound yet) |
+| Mythic | 1-of-1 "misprint" or "B-side" | Full animated card with sound | Group special, gold foil, the longest chime run and the most sparkle (no animation yet) |
 
 ### Features that make it feel K-pop specific
 
@@ -32,13 +32,12 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - **Duplicate trading.** A trade board, or "WTT" (want to trade) posts between users.
 - **Comeback events.** Limited-time packs with era-exclusive cards, which keeps people coming back. *(Built: see [Comeback events](#comeback-events). Event albums use the normal pull rates and pity.)*
 - **Pity system.** A guaranteed high-rarity pull after a run of bad luck, so it never feels unfair. *(Built: a lucky draw is guaranteed within 15 albums. The original idea was an Epic every 10 packs.)*
-- **Fan chant / lightstick mode.** Shake or tap during a Legendary reveal and a lightstick glows in the group's color.
 
 ### Tech stack
 
 - **Prototype:** a single HTML page with the foil shader, card flips and confetti. Kept in `prototype/`.
 - **Full website:** Next.js (this repo), with Supabase for accounts and per-account saves (built) and, next, trades, hosted on Vercel.
-- **Game feel:** the pack is a real 3D object built with three.js (`lib/pack3d.js`), cut open by pressing on the dotted line near its top and dragging along it, in the spirit of Pokémon TCG Pocket. Planned: Howler.js for the rip of the pack and the sparkle of a rare card.
+- **Game feel:** the pack is a real 3D object built with three.js (`lib/pack3d.js`), cut open by pressing on the dotted line near its top and dragging along it, in the spirit of Pokémon TCG Pocket. Sound is synthesized in the browser with the Web Audio API (`lib/sound.js`, no audio files): a rip that follows how fast you cut, and chimes when a Rare-or-better card is revealed.
 
 ### MVP (version 1)
 
@@ -51,6 +50,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 - [x] Forgot password (an emailed reset link) and Change password in the account menu
 - [x] Saves on the server, per account (Supabase `saves` table), with every album roll, daily claim and reset done in Server Actions. A browser's old localStorage save can be brought into an account once
 - [x] Pick your bias: a favourite member per group (saved in `saves.bias`) gets 2 points more of the member cards
+- [x] Sound and sparkle: the cut rips louder and brighter the faster you drag, and Rare-or-better reveals chime and sparkle (more for rarer cards). A switch on the opening stage turns sound off, remembered per browser
 - [x] Daily reward: 300 stars a day instead of a free pack (enough for 3 albums), resetting at midnight in the time zone the player signed up from
 - [x] Comeback events: limited-time albums with a countdown, refused by the server outside their window
 
@@ -125,6 +125,7 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 - `components/SiteHeader.jsx` is the nav bar shown on every page: a shadcn Navigation Menu with a Groups dropdown, plus stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
 - `components/OpeningStage.jsx` runs an opening: the 3D pack, the cards sliding out of it, the stack you flip and swipe through, and the spread of all five at the end.
 - `lib/pack3d.js` is the 3D booster pack (three.js, loaded only when a pack opens): a puffy foil pillow with rounded shoulders, pinch wrinkles fanning into rippled, slightly curled seals (seeded per era, so each pack crinkles its own way), and a dotted cut line. Press on the line and drag along it: the cut grows only from its own ends, so it has to be traced, and once it reaches a side the strip above it peels up, then flies off when the cut spans the pack. Pressing anywhere else on the pack grabs it to turn it around; it stays nearly in place, giving only a little toward the pointer (springs bring it back). The five pulls sit inside the pack (art facing the back, with the first card to be revealed at the back, so a peek only shows the card you would flip first), and are hidden once the DOM stack takes over. Plus foil glitter. Its wrapper art is drawn by `getPackArt()` in `lib/art.js` from the album cover (real groups) or a member lineup (MOONFLARE).
+- `lib/sound.js` makes the game's sounds with the Web Audio API. Audio starts only after a press on the opening stage, and the stage's sound switch is kept in localStorage (`lib/usePref.js`). `sparkle()` in `lib/celebrate.js` draws the stars over a revealed card in plain DOM and CSS.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `lib/cards.js` is the card catalog (groups, eras, cards) and the foil each rarity gets.
 - `lib/photos/lesserafim.js` lists LE SSERAFIM photo URLs. It's generated by `scripts/fetch-lesserafim.mjs`.

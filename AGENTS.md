@@ -82,7 +82,9 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
 | `tests/` | Unit tests for game logic (`npm test`) |
 | `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, booster pack wrappers (`getPackArt`, `PACK`), photo cropping |
-| `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
+| `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls, and `sparkle()` stars over a revealed Rare-or-better card |
+| `lib/sound.js` | Sounds made with the Web Audio API: the rip (scaled by cut speed), the tear, reveal chimes |
+| `lib/usePref.js` | `usePref(key, default)`: a per-browser setting in localStorage, read in an effect (the stage's sound switch) |
 | `lib/rarity-styles.js` | Tailwind class maps per rarity |
 | `prototype/` | The original single-file HTML prototype. Reference only; don't develop it further |
 
@@ -131,6 +133,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
 - **The bias boost picks the member, never the rarity.** `pickCard()` in `lib/gacha.js` gives the bias `BIAS_BOOST` (2) extra percentage points of each member rarity and uses one `rng()` call either way, so rarity odds, pity and refunds are unchanged and rolls without a bias are identical to before. The user's hard limit is 1–2 points; `tests/gacha.test.js` enforces it. Show odds through `memberRates()`, never hand-computed numbers. `saves.bias` is `{ groupCode: memberCode }`; Reset keeps it.
 - **Comeback events are eras with a window.** An event album is an `ERAS` entry with `event: { starts, ends, blurb }` (ISO strings with an offset). The server decides: `openPack` refuses it outside the window with `event_closed`, using `Date.now()` on the server. Pages filter out `upcoming` eras with `eventPhase()` and show ended ones as closed; never drop an ended event's era, its card ids are save keys. Countdown text comes from `useNow()`, which starts from the render's own clock, so the phase matches between server and client but the seconds don't: keep `suppressHydrationWarning` on the countdown text. Drawn art keys palettes on era codes in `lib/art.js` (`PM`, `NB`, `SE`); a new MOONFLARE event era falls back to the Neon Bloom background unless you add one.
+- **Sound needs a gesture.** Browsers block audio until the player presses something, so the stage calls `unlockAudio()` from `onPointerDownCapture` / `onKeyDownCapture`. Every `play*` in `lib/sound.js` is silent until then and while sound is off, and no `AudioContext` is created while it's off. The rip is driven by `onRip(speed)` from `PackScene.grow()` (where the cut extends), and `lib/sound.js` throttles the grains. Sounds aren't skipped for reduced motion; the sparkle is.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
@@ -164,4 +167,3 @@ The README's Direction section lists planned features. Notes for the likely next
 
 - **Trading** → Supabase (a trades table, written only by Server Actions like the save), deployed on Vercel. Move cards between two saves in one transaction (a Postgres function called with the secret key) so neither side can lose a card on a clash.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
-- **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.
