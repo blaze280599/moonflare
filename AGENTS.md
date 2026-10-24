@@ -54,7 +54,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/Collection.jsx` | Per-album progress tiles, the Binder and Reset collection |
 | `components/OpeningStage.jsx` | Full-screen album opening: rip the shrink-wrap, flip 5 cards |
 | `components/InspectModal.jsx` | Card detail dialog: foil picker, flip, try-your-own-photo |
-| `components/Binder.jsx` | Collection grid with era tabs |
+| `components/Binder.jsx` | Collection grid with an era picker |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
 | `components/ui/` | shadcn components. Add new ones with the CLI rather than hand-writing them |
 | `lib/cards.js` | Card catalog (groups, members, eras, variants), rarity table, `foilFor()` |

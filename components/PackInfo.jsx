@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 export const CARD_KIND = { common: 'Album PC', rare: 'Selfie PC', epic: 'POB', legendary: 'Lucky draw', mythic: 'Group special' };
 
 // Built from RATES in lib/gacha.js so the tables can't drift from the real odds.
-export const PULL_RATES = RATES.map(r => ({ rarity: r.rarity, card: CARD_KIND[r.rarity], rate: `${r.pct}%` }));
+const PULL_RATES = RATES.map(r => ({ rarity: r.rarity, card: CARD_KIND[r.rarity], rate: `${r.pct}%` }));
 
 // Pity progress and the pull-rate table, shown next to the albums.
 export default function PackInfo({ defaultOpen = false }) {
