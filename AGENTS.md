@@ -54,7 +54,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/PackInfo.jsx` | Pity progress and the pull-rate table, built from `RATES` |
 | `components/Collection.jsx` | Per-album progress tiles, the Binder and Reset collection |
 | `components/OpeningStage.jsx` | Full-screen album opening: tear the 3D pack, cards slide out into a stack, flip and swipe each one, then a spread of all five |
-| `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, drag-to-tear, springs, the flying strip and glitter |
+| `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, click-and-drag cutting along the line, grab to move/turn, springs, the flying strip and glitter |
 | `components/InspectModal.jsx` | Card detail dialog: foil picker, flip, try-your-own-photo |
 | `components/Binder.jsx` | Collection grid with an era picker |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
@@ -113,7 +113,7 @@ Do all of these before committing. Nobody else will.
 1. `npm run build` and `npm test` pass with no errors.
 2. Start the dev server and open http://localhost:3000. Check the browser console for errors.
 3. Click through the flows your change touches. For anything game-related, do a full loop:
-   - Open an album, drag across the top of the pack to tear it (and try **Rip it for me** with the keyboard), and confirm the strip flies off, the cards slide out face-down and the pack drops away.
+   - Open an album. Grab the pack below the line and drag it around (it should move, turn and spring back). Then press on the dotted line and drag along it to cut it; stop halfway and resume from the cut's end; try **Cut it for me** with the keyboard. Confirm the strip flies off, the cards slide out face-down and the pack drops away.
    - Flip each card, swipe it away, and check the captions, NEW and duplicate-refund labels. Try **Show all** too, and check the rarest card comes last.
    - Open a revealed card in the dialog, switch foils, flip it, then press Escape. The dialog should close and the stage should stay open.
    - Close the stage, or use **Go to binder**, which should land on `/collection` showing that album. Check the binder updated and open a binder card.

@@ -68,7 +68,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
   const [phase, setPhase] = useState('pack'); // pack → emerge → stack → spread
   const [box, setBox] = useState(null);
   const [packReady, setPackReady] = useState(false);
-  const [tearing, setTearing] = useState(false);
+  const [cut, setCut] = useState('none'); // none → started → done
   const [top, setTop] = useState(0);
   const [flying, setFlying] = useState([]);
   const [revealed, setRevealed] = useState(() => deck.map(() => false));
@@ -121,8 +121,9 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
           era,
           reducedMotion,
           onReady: () => setPackReady(true),
-          onTearStart: () => setTearing(true),
+          onTearStart: () => setCut('started'),
           onTorn: () => {
+            setCut('done');
             later(() => sceneRef.current?.present(-SINK * layoutRef.current.packH), 220);
             later(() => setPhase('emerge'), 680);
           },
@@ -287,7 +288,8 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
   const current = deck[top];
   const tell = current && !revealed[top] && RARITY[current.card.rarity].rank >= 2;
   let hint = '';
-  if (phase === 'pack' && packReady && !tearing) hint = 'Drag across the top of the pack to tear it open';
+  if (phase === 'pack' && packReady && cut === 'none') hint = 'Press on the dotted line and drag across to cut it open · grab the pack anywhere else to turn it';
+  else if (phase === 'pack' && cut === 'started') hint = 'Keep cutting all the way across';
   else if (phase === 'stack' && current) {
     hint = !revealed[top]
       ? `Tap to flip · card ${top + 1} of ${deck.length}${tell ? ' · a glow means Epic or better' : ''}`
@@ -418,10 +420,10 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
             </p>
 
             <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center">
-              {phase === 'pack' && packReady && !tearing && (
+              {phase === 'pack' && packReady && cut !== 'done' && (
                 <Button ref={ripRef} variant="ghost" className="text-white/70 hover:bg-white/10 hover:text-white" onClick={() => sceneRef.current?.rip()}>
                   <Scissors />
-                  Rip it for me
+                  Cut it for me
                 </Button>
               )}
               {phase === 'stack' && current && (
