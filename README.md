@@ -78,7 +78,7 @@ Then open http://localhost:3000.
 ## UI stack
 
 - [shadcn/ui](https://ui.shadcn.com) (Radix, "nova" preset) for the app's buttons, cards, tabs, dialogs, select, tooltips, table and toasts. The components live in `components/ui/`; add more with `npx shadcn@latest add <name>`.
-- Tailwind CSS v4. Theme tokens (a dark plum background, a lightstick-pink primary and rarity colors) are in `app/globals.css`. The app always renders in dark mode (`<html class="dark">`).
+- Tailwind CSS v4. Theme tokens (Claude Code-style warm charcoal neutrals, a pink primary in place of its orange, and rarity colors) are in `app/globals.css`. The app always renders in dark mode (`<html class="dark">`).
 - `app/globals.css` imports Tailwind with `source("..")`, so class scanning works even when the dev server starts from another folder.
 - The opening stage keeps its own CSS in `globals.css`, because its animations are specific to the game.
 
