@@ -119,6 +119,7 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
         if (cancelled || sceneRef.current) return;
         sceneRef.current = new PackScene(canvasRef.current, {
           era,
+          cards: deck.map(({ card }) => ({ art: getArt(card), back: getBack(era) })),
           reducedMotion,
           onReady: () => setPackReady(true),
           onTearStart: () => setCut('started'),
