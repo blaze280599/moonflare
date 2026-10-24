@@ -9,10 +9,10 @@ Read `README.md` first. Its **Direction** section is the product spec: the core 
 ## Ground rules
 
 1. **Verify everything you change.** Run the build, open the app in a browser, and click through what you touched (see [Verifying a change](#verifying-a-change)). "It should work" is not done.
-3. **Keep the game fair and honest.** Pull rates shown in the UI must match the code in `lib/gacha.js`. The odds table in `components/PackInfo.jsx` and the rarity tiles in `components/Landing.jsx` are built from `RATES`, so don't hard-code numbers there. If you change rates, pity or refunds, update the README and `tests/gacha.test.js` in the same commit.
-4. **Stay inside the spec.** Build features from the README's Direction section. If you add or drop a planned feature, update the README so the next agent sees the current plan. When the README and the code disagree, fix whichever is wrong in the same change.
-5. **Small, focused commits.** One logical change per commit, with a message that says what changed and why. Never commit a broken build.
-6. **Leave a trail.** Future agents only know what's in the repo. Record decisions, gotchas and anything non-obvious in this file, the README or code comments, not just in your session.
+2. **Keep the game fair and honest.** Pull rates shown in the UI must match the code in `lib/gacha.js`. The odds table in `components/PackInfo.jsx` and the rarity tiles in `components/Landing.jsx` are built from `RATES`, so don't hard-code numbers there. If you change rates, pity or refunds, update the README and `tests/gacha.test.js` in the same commit.
+3. **Stay inside the spec.** Build features from the README's Direction section. If you add or drop a planned feature, update the README so the next agent sees the current plan. When the README and the code disagree, fix whichever is wrong in the same change.
+4. **Small, focused commits.** One logical change per commit, with a message that says what changed and why. Never commit a broken build.
+5. **Leave a trail.** Future agents only know what's in the repo. Record decisions, gotchas and anything non-obvious in this file, the README or code comments, not just in your session.
 
 ## Commands
 
