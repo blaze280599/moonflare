@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package } from 'lucide-react';
+import { Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import OpeningStage from '@/components/OpeningStage';
 import PackInfo from '@/components/PackInfo';
@@ -31,16 +31,24 @@ export default function GroupPage({ slug }) {
   const router = useRouter();
   const { state, loaded, artReady, openPack, inspecting, inspect, setBinderEra } = useGameContext();
   const [pack, setPack] = useState(null); // { id, era, pulls }
+  const [opening, setOpening] = useState(null); // the era whose album is being rolled on the server
 
   const eras = ERAS.filter(e => e.group === group).reverse();
   const groupCards = CARDS.filter(c => c.era.group === group);
   const groupOwned = groupCards.filter(c => state.owned[c.id]).length;
   const canAfford = state.coins >= PACK_COST;
 
-  const startPack = era => {
-    const pulls = openPack(era);
-    if (!pulls) {
+  const startPack = async era => {
+    if (opening) return;
+    setOpening(era);
+    const { pulls, error } = await openPack(era);
+    setOpening(null);
+    if (error === 'not_enough_stars') {
       toast(`You need ${PACK_COST} ★`, { description: 'Claim your daily stars, or open albums to earn stars from duplicates.' });
+      return;
+    }
+    if (error) {
+      toast.error('Couldn’t open the album', { description: error });
       return;
     }
     setPack({ id: Date.now(), era, pulls });
@@ -129,9 +137,9 @@ export default function GroupPage({ slug }) {
                       <Progress value={(owned / cards.length) * 100} className="h-1 flex-1" />
                       <span className="tabular-nums">{loaded ? `${owned}/${cards.length}` : '—'}</span>
                     </div>
-                    <Button className="mt-3 w-full" disabled={!loaded || !artReady || !canAfford} onClick={() => startPack(era)}>
-                      <Package />
-                      Open · {PACK_COST} ★
+                    <Button className="mt-3 w-full" disabled={!loaded || !artReady || !canAfford || Boolean(opening)} onClick={() => startPack(era)}>
+                      {opening === era ? <Loader2 className="animate-spin" /> : <Package />}
+                      {opening === era ? 'Opening…' : `Open · ${PACK_COST} ★`}
                     </Button>
                   </CardContent>
                 </Card>
@@ -152,6 +160,7 @@ export default function GroupPage({ slug }) {
           era={pack.era}
           pulls={pack.pulls}
           canAffordAnother={canAfford}
+          opening={Boolean(opening)}
           onOpenAnother={startPack}
           onInspect={inspect}
           onGoToBinder={era => {

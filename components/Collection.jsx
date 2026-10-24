@@ -124,16 +124,17 @@ export default function Collection() {
             <AlertDialogHeader>
               <AlertDialogTitle>Erase your whole collection?</AlertDialogTitle>
               <AlertDialogDescription>
-                Every card, your stars and your pity progress are deleted from this browser. You start again with {NEW_GAME.coins} stars.
+                Every card, your stars and your pity progress are deleted from your account. You start again with {NEW_GAME.coins} stars.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep my cards</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
-                onClick={() => {
-                  reset();
-                  toast('Collection reset', { description: `You have ${NEW_GAME.coins} stars.` });
+                onClick={async () => {
+                  const { error } = await reset();
+                  if (error) toast.error('Couldn’t reset your collection', { description: error });
+                  else toast('Collection reset', { description: `You have ${NEW_GAME.coins} stars.` });
                 }}
               >
                 Erase collection

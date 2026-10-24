@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { BookOpen, Layers, Scissors, X } from 'lucide-react';
+import { BookOpen, Layers, Loader2, Scissors, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import HoloCard from '@/components/HoloCard/HoloCard';
 import { RARITY, foilFor } from '@/lib/cards';
@@ -61,7 +61,7 @@ const captionFor = (era, { card, isNew, refund }) => (
 // Full-screen album opening: tear the 3D pack open (lib/pack3d.js), the cards slide out into a stack,
 // then flip each card and swipe it away to see the next. Ends on a spread of all five.
 // Remount with a new `key` for each album so the state starts fresh.
-export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnother, onInspect, onGoToBinder, onClose }) {
+export default function OpeningStage({ era, pulls, canAffordAnother, opening, onOpenAnother, onInspect, onGoToBinder, onClose }) {
   // Reveal the rarest card last, so each pack builds up to its best pull. Array sort is stable.
   const [deck] = useState(() => [...pulls].sort((a, b) => RARITY[a.card.rarity].rank - RARITY[b.card.rarity].rank));
   const [reducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -348,8 +348,9 @@ export default function OpeningStage({ era, pulls, canAffordAnother, onOpenAnoth
             </div>
             <p className="mt-5 font-mono text-xs tracking-wider text-white/55 uppercase">Tap a card for a closer look</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-              <Button size="lg" className="px-4" disabled={!canAffordAnother} onClick={() => onOpenAnother(era)}>
-                Open another · {PACK_COST} ★
+              <Button size="lg" className="px-4" disabled={!canAffordAnother || opening} onClick={() => onOpenAnother(era)}>
+                {opening && <Loader2 className="animate-spin" />}
+                {opening ? 'Opening…' : `Open another · ${PACK_COST} ★`}
               </Button>
               <Button size="lg" variant="ghost" className="px-4 text-white hover:bg-white/10" onClick={() => onGoToBinder(era)}>
                 <BookOpen />

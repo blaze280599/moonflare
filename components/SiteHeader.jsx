@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Check, CircleUser, Gift, LogOut, Menu, MoonStar, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -45,8 +45,13 @@ export default function SiteHeader({ player }) {
   const onSignOut = () => startSignOut(() => signOut());
   const { state, loaded, artReady, claimDaily, dailyClaimed } = useGameContext();
 
-  const onDaily = () => {
-    if (claimDaily()) toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
+  const [claiming, setClaiming] = useState(false);
+  const onDaily = async () => {
+    setClaiming(true);
+    const { error } = await claimDaily();
+    setClaiming(false);
+    if (!error) toast.success(`+${DAILY_STARS} stars added`, { description: 'Come back tomorrow for more.' });
+    else if (error !== 'already_claimed') toast.error('Couldn’t claim your stars', { description: error });
   };
 
   return (
@@ -98,7 +103,7 @@ export default function SiteHeader({ player }) {
             <Button
               size="lg"
               className="px-3"
-              disabled={!loaded || dailyClaimed}
+              disabled={!loaded || dailyClaimed || claiming}
               onClick={onDaily}
               aria-label={dailyClaimed ? 'Daily stars claimed today' : `Claim ${DAILY_STARS} daily stars`}
             >
