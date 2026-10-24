@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { Check, Gift, KeyRound, LogOut, Menu, MoonStar, Star, UserRound } from 'lucide-react';
+import { Check, Gift, KeyRound, LogOut, Menu, Star, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CARDS, ERAS, GROUPS } from '@/lib/cards';
@@ -33,6 +33,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle
 } from '@/components/ui/navigation-menu';
+import PocaLogo from '@/components/PocaLogo';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,7 +68,7 @@ export default function SiteHeader({ player }) {
     <header className="sticky top-0 z-30 border-b bg-background/75 pt-[env(safe-area-inset-top)] backdrop-blur-lg">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
         <Link href="/" className="mr-4 flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-          <MoonStar className="size-5 text-primary" />
+          <PocaLogo className="size-5 text-primary" />
           <span className="font-heading text-lg font-semibold tracking-tight">Poca</span>
         </Link>
 
@@ -174,7 +175,7 @@ export default function SiteHeader({ player }) {
             <SheetContent side="right" className="w-72">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <MoonStar className="size-4 text-primary" />
+                  <PocaLogo className="size-4 text-primary" />
                   Poca
                 </SheetTitle>
               </SheetHeader>

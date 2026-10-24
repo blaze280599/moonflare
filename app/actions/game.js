@@ -116,7 +116,7 @@ export async function reset() {
   });
 }
 
-// Brings an old browser save (localStorage `moonflare-save-v1`) into the account, once.
+// Brings an old browser save (localStorage `poca-save-v1`) into the account, once.
 export async function importLocalSave(raw) {
   const imported = sanitizeImport(raw);
   return withPlayer(player =>

@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 // Where saves lived before accounts. Read once here, then cleared after an import.
-const LOCAL_SAVE_KEY = 'moonflare-save-v1';
+const LOCAL_SAVE_KEY = 'poca-save-v1';
 
 // One-time offer to bring a browser's pre-account collection into the signed-in account. Rendered by
 // GameProvider only while the account hasn't answered it (saves.local_import_at is null). The server

@@ -81,7 +81,7 @@ export default function OpeningStage({ pack, era, pulls, another, opening, onIns
   const [top, setTop] = useState(0);
   const [flying, setFlying] = useState([]);
   const [revealed, setRevealed] = useState(() => deck.map(() => false));
-  const [soundOn, setSoundPref] = usePref('moonflare-sound', true);
+  const [soundOn, setSoundPref] = usePref('poca-sound', true);
 
   const areaRef = useRef(null);
   const canvasRef = useRef(null);

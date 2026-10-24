@@ -24,6 +24,7 @@ npm start          # serve the production build
 npm test           # unit tests (Node's built-in runner, tests/*.test.js)
 npm run photos -- <group>   # rebuild lib/photos/<group>.js from scripts/groups/<group>.js
 npm run photos:check        # check every listed photo still exists on the wiki
+npm run brand               # rebuild brand/ and the favicons from lib/logo.js
 ```
 
 There is no linter script. `npm run build` type-checks and lints, and `npm test` covers `lib/gacha.js` (rates, pity, refunds, and an economy check that an all-duplicate album refunds well under the cheapest pack) and `lib/shop.js` (prices, album odds, buying and opening). Both must pass before every commit. Add tests when you add logic that can break silently. Tests use `node:test` with no extra dependencies, so `package.json` has `"type": "module"`, and any `lib/` file a test imports must use explicit `.js` extensions in its relative imports (Node won't resolve `./cards`).
@@ -75,6 +76,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/LocalSaveImport.jsx` | One-time dialog offering to bring a browser's pre-account localStorage save into the account |
 | `components/SiteHeader.jsx` | Sticky nav bar: shadcn NavigationMenu with a Groups dropdown, stars + daily button (ButtonGroup); a Sheet menu below `md` |
 | `components/SiteFooter.jsx` | Disclaimer and footer links |
+| `components/PocaLogo.jsx` | The Poca mark as an inline SVG, sized and colored like a lucide icon. Used in the header, footer and auth pages |
 | `components/Landing.jsx` | Landing page: hero HoloCard, how it works, groups, rarity tiers |
 | `components/GroupPage.jsx` | A group's album grid (browse only, "View in binder"), with its pack, bias picker and pity/odds in the sidebar |
 | `components/PackInfo.jsx` | Pity progress, the pull-rate table built from `RATES`, and per-member odds from `memberRates()` |
@@ -92,6 +94,8 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
 | `scripts/fetch-photos.mjs` | Rebuilds `lib/photos/<group>.js` from the K-pop Fandom wiki API (`npm run photos -- <group>`); `npm run photos:check` finds deleted or renamed photos |
 | `scripts/groups/` | One photo config per real group: gallery pages, album pages, covers, hand-picked overrides |
+| `scripts/brand.mjs` | `npm run brand`: rebuilds the logo files in `brand/` and the favicons (`app/icon.svg`, `app/apple-icon.png`) from `lib/logo.js` |
+| `brand/` | The Poca logo as standalone files for use outside the site: `poca-mark.svg` (pink), `poca-mark-white.svg`, `poca-icon.svg` (app icon on a dark square) and `poca-icon-512.png`. Generated; don't edit by hand |
 | `lib/stickers.js` | Built-in sticker set (SVG in code, as data URLs) and toploader tints |
 | `lib/deco.js` | Toploader rules: `sanitizeToploader`, `applyToploader` (owned cards only, caps, clamps), `toploaderFor` |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
@@ -102,6 +106,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
 | `tests/` | Unit tests for game logic (`npm test`) |
 | `lib/art.js` | Card and cover photo URLs, card backs and booster pack wrappers drawn on canvas (`wrapperFor`, `getPackArt`, `getPackPreview`, `PACK`), photo cropping |
+| `lib/logo.js` | The Poca mark's SVG path (`LOGO_PATH`), the one source for `PocaLogo`, the canvas art and `npm run brand`. `tests/logo.test.js` checks the saved files still match it |
 | `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls, and `sparkle()` stars over a revealed Rare-or-better card |
 | `lib/sound.js` | Sounds made with the Web Audio API: the rip (scaled by cut speed), the tear, reveal chimes |
 | `lib/usePref.js` | `usePref(key, default)`: a per-browser setting in localStorage, read in an effect (the stage's sound switch) |
@@ -156,7 +161,7 @@ These have all bitten us before. Read them before touching the related code.
 - **Sign-up is open.** There's no invite code (removed on purpose): anyone who can reach the site can make an account, so keep it private (see Stack). The username and time zone go in `user_metadata`, and the `on_auth_user_created` trigger copies them into `profiles`.
 - **Password reset.** `/forgot-password` is public and guest-only; it always shows the same "if that email has an account" screen, so it can't be used to find players (Supabase also answers unknown emails with a success). The emailed link goes to `/auth/confirm?next=/reset-password`, which signs the player in. `/reset-password` is deliberately *not* in `PUBLIC`: it needs that session, and the account menu's Change password uses the same page. A dead link goes back to `/forgot-password?error=link`. The `?next=` in the link only survives if the Supabase redirect allowlist matches it (`…/auth/confirm**`, see README "Run it"); otherwise Supabase quietly sends the player to the bare Site URL. Don't test by spamming reset emails: the built-in mailer sends only a few an hour.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
-- **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it. The site was renamed from Moonflare to Poca in Oct 2026, but the localStorage keys (`moonflare-save-v1`, `moonflare-sound`) keep the old name on purpose: renaming them would orphan old saves and the sound setting.
+- **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `poca-save-v1` only after an import, so a second account on the same browser can still claim it. The key was `moonflare-save-v1` until the Oct 2026 rename to Poca (dropped on purpose, during development), and nothing writes `poca-save-v1` now, so in practice there is nothing left to import.
 - **The bias boost picks the member, never the rarity.** `pickCard()` in `lib/gacha.js` gives the bias `BIAS_BOOST` (2) extra percentage points of each member rarity and uses one `rng()` call either way, so rarity odds, pity and refunds are unchanged and rolls without a bias are identical to before. The user's hard limit is 1–2 points; `tests/gacha.test.js` enforces it. Show odds through `memberRates()`, never hand-computed numbers. `saves.bias` is `{ groupCode: memberCode }`; Reset keeps it.
 - **Comeback events are eras with a window.** An event album is an `ERAS` entry with `event: { starts, ends, blurb }` (ISO strings with an offset). The server decides: `openPack` refuses it outside the window with `event_closed`, using `Date.now()` on the server. Pages filter out `upcoming` eras with `eventPhase()` and show ended ones as closed; never drop an ended event's era, its card ids are save keys. Countdown text comes from `useNow()`, which starts from the render's own clock, so the phase matches between server and client but the seconds don't: keep `suppressHydrationWarning` on the countdown text. No event is scheduled right now; a new one needs photos like any era.
 - **Sound needs a gesture.** Browsers block audio until the player presses something, so the stage calls `unlockAudio()` from `onPointerDownCapture` / `onKeyDownCapture`. Every `play*` in `lib/sound.js` is silent until then and while sound is off, and no `AudioContext` is created while it's off. The rip is driven by `onRip(speed)` from `PackScene.grow()` (where the cut extends), and `lib/sound.js` throttles the grains. Sounds aren't skipped for reduced motion; the sparkle is.

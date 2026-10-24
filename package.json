@@ -9,7 +9,8 @@
     "start": "next start",
     "test": "node --test",
     "photos": "node scripts/fetch-photos.mjs",
-    "photos:check": "node scripts/fetch-photos.mjs --check"
+    "photos:check": "node scripts/fetch-photos.mjs --check",
+    "brand": "node scripts/brand.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

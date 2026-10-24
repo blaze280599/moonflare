@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MoonStar } from 'lucide-react';
+import PocaLogo from '@/components/PocaLogo';
 import { GROUPS } from '@/lib/cards';
 import { Button } from '@/components/ui/button';
 
@@ -9,7 +9,7 @@ export default function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 text-sm text-muted-foreground sm:grid-cols-[1fr_auto]">
         <div className="max-w-xl space-y-2">
           <div className="flex items-center gap-2 text-foreground">
-            <MoonStar className="size-4 text-primary" />
+            <PocaLogo className="size-4 text-primary" />
             <span className="font-heading font-semibold">Poca Photocard Club</span>
           </div>
           <p>
