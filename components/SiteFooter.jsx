@@ -13,8 +13,8 @@ export default function SiteFooter() {
             <span className="font-heading font-semibold">Moonflare Photocard Club</span>
           </div>
           <p>
-            LE SSERAFIM photos load from the K-pop Fandom wiki; this is a fan project, not affiliated
-            with Source Music or HYBE. Your collection is saved to your account.
+            Group photos load from the K-pop Fandom wiki; this is a fan project, not affiliated with any
+            group or their labels. Your collection is saved to your account.
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-start">

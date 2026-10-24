@@ -153,7 +153,7 @@ link to (handy for finding the right page names), and it writes nothing if any c
 - **Dead photos:** `npm run photos:check` asks the wiki whether every listed file still exists and names any
   that were deleted or renamed. Run it now and then; a missing file shows as a blank card.
 
-If this site ever goes public, the photos have to go: they belong to Source Music / HYBE. Swap them
+If this site ever goes public, the photos have to go: they belong to the groups' labels (Source Music / HYBE for LE SSERAFIM, SM Entertainment for aespa). Swap them
 for licensed art or player-uploaded photos first.
 
 ## Run it
