@@ -39,7 +39,7 @@ test('countdowns read well at every scale', () => {
 });
 
 test('every event has a valid window and a blurb', () => {
-  assert.ok(EVENT_ERAS.length > 0);
+  // No event is scheduled right now, so this loop may check nothing; it guards the next one.
   for (const era of EVENT_ERAS) {
     const a = Date.parse(era.event.starts), b = Date.parse(era.event.ends);
     assert.ok(Number.isFinite(a) && Number.isFinite(b), `${era.name} has unparseable dates`);

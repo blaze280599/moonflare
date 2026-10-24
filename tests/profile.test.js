@@ -91,13 +91,13 @@ test('showcaseFor hides cards that are no longer owned without dropping them', (
 });
 
 test('sanitizeProfile cleans every field against the save', () => {
-  const p = sanitizeProfile({ bio: ' hey\n', favGroup: 'MF', favMember: 'YR', banner: 'card:FL-KZ-pob', extra: 1 }, {});
-  assert.deepEqual(p, { bio: 'hey', favGroup: 'MF', favMember: 'YR', banner: DEFAULT_BANNER });
+  const p = sanitizeProfile({ bio: ' hey\n', favGroup: 'LS', favMember: 'YJ', banner: 'card:FL-KZ-pob', extra: 1 }, {});
+  assert.deepEqual(p, { bio: 'hey', favGroup: 'LS', favMember: 'YJ', banner: DEFAULT_BANNER });
   assert.deepEqual(sanitizeProfile(null, {}), { bio: '', favGroup: null, favMember: null, banner: DEFAULT_BANNER });
 });
 
 test('profileStats counts cards, copies, completed albums and the rarest card', () => {
-  const era = ERAS.find(e => e.code === 'PM');
+  const era = ERAS.find(e => e.code === 'EZ');
   const full = Object.fromEntries(CARDS.filter(x => x.era === era).map(x => [x.id, 2]));
   const s = profileStats({ ...full, 'FL-KZ-album': 1 }, 12, 3);
   assert.equal(s.cards, 22);
@@ -105,7 +105,7 @@ test('profileStats counts cards, copies, completed albums and the rarest card', 
   assert.equal(s.albumsDone, 1);
   assert.equal(s.mythics, 1);
   assert.equal(s.legendaries, 5);
-  assert.equal(s.rarest, 'PM-GRP');
+  assert.equal(s.rarest, 'EZ-GRP');
   assert.equal(s.packs, 12);
   assert.equal(s.trades, 3);
   assert.equal(profileStats({}).rarest, null);
@@ -114,8 +114,8 @@ test('profileStats counts cards, copies, completed albums and the rarest card', 
 
 test('badges follow the stats', () => {
   assert.deepEqual(badgesFor(profileStats({})), []);
-  const s = profileStats(owning('PM-GRP', 'SE-HN-album'), 1, 1);
-  assert.deepEqual(badgesFor(s), ['first-album', 'mythic', 'event', 'trader']);
+  const s = profileStats(owning('EZ-GRP', 'FL-KZ-album'), 1, 1);
+  assert.deepEqual(badgesFor(s), ['first-album', 'mythic', 'trader']);
   assert.ok(badgesFor(s, { count: 10 }).includes('bias-wrecked'));
 });
 
@@ -128,14 +128,14 @@ test('biasWall lists the favourite member’s cards rarest first', () => {
 
 test('buildProfileView sends derived data and hides unowned showcase cards', () => {
   const state = { ...NEW_GAME, owned: owning(a, c), packs: 2, deco: { [a]: { t: 'pink', s: [] }, [b]: { t: 'mint', s: [] } } };
-  const row = { username: 'moon', created_at: '2026-10-24T00:00:00Z', bio: 'hi', fav_group: 'MF', fav_member: 'HN', showcase: [a, b, c], banner: 'card:' + b };
+  const row = { username: 'moon', created_at: '2026-10-24T00:00:00Z', bio: 'hi', fav_group: 'LS', fav_member: 'SK', showcase: [a, b, c], banner: 'card:' + b };
   const view = buildProfileView(row, state, 0);
   assert.deepEqual(view.showcase, [{ id: a, deco: { t: 'pink', s: [] } }, { id: c, deco: null }]);
   assert.deepEqual(view.banner, { kind: 'preset', id: 'moonrise' });
   assert.equal(view.bannerValue, DEFAULT_BANNER);
   assert.equal(view.stats.cards, 2);
   assert.ok(view.badges.includes('first-album'));
-  assert.equal(view.wall.total, CARDS.filter(x => x.era.group.code === 'MF' && x.member?.code === 'HN').length);
+  assert.equal(view.wall.total, CARDS.filter(x => x.era.group.code === 'LS' && x.member?.code === 'SK').length);
   assert.equal('owned' in view, false);
   assert.equal(buildProfileView({ ...row, fav_member: null }, state).wall, null);
 });

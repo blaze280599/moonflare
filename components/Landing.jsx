@@ -75,7 +75,7 @@ export default function Landing() {
             </div>
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
               {[
-                [GROUPS.length, 'groups'],
+                [GROUPS.length, GROUPS.length === 1 ? 'group' : 'groups'],
                 [ERAS.length, 'albums'],
                 [CARDS.length, 'photocards']
               ].map(([n, label]) => (

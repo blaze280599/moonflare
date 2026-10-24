@@ -34,7 +34,7 @@ test('dateInZone treats a missing or bad zone as UTC', () => {
 });
 
 test('rows and game state convert both ways', () => {
-  const state = { coins: 340, owned: { 'PM-HN-album': 2 }, packs: 3, pity: 2, lastDaily: '2026-10-24', bias: { LS: 'KZ' }, deco: { 'PM-HN-album': { t: 'pink', s: [] } } };
+  const state = { coins: 340, owned: { 'FL-KZ-album': 2 }, packs: 3, pity: 2, lastDaily: '2026-10-24', bias: { LS: 'KZ' }, deco: { 'FL-KZ-album': { t: 'pink', s: [] } } };
   assert.deepEqual(rowToState(stateToRow(state)), state);
   assert.equal(stateToRow(NEW_GAME).last_daily, null);
   assert.equal(rowToState({ coins: 500, owned: {}, packs: 0, pity: 0, last_daily: null }).lastDaily, '');

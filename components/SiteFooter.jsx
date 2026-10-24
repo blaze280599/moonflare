@@ -13,7 +13,7 @@ export default function SiteFooter() {
             <span className="font-heading font-semibold">Moonflare Photocard Club</span>
           </div>
           <p>
-            MOONFLARE is a made-up group. LE SSERAFIM photos load from the K-pop Fandom wiki; this is a fan project, not affiliated
+            LE SSERAFIM photos load from the K-pop Fandom wiki; this is a fan project, not affiliated
             with Source Music or HYBE. Your collection is saved to your account.
           </p>
         </div>

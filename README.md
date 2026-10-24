@@ -42,7 +42,7 @@ A card-opening site built around the K-pop photocard hobby, where collectors cha
 
 ### MVP (version 1)
 
-- [x] One fictional group of 5 members, about 40 cards (42, across 5 rarities)
+- [x] Real groups only. The made-up MOONFLARE group (drawn card art) was removed in October 2026; its codes are retired (see `lib/cards.js`)
 - [x] A real group: LE SSERAFIM, 7 eras from FEARLESS to PUREFLOW Pt.1, 147 photo cards (see [Real groups](#real-groups))
 - [x] Album opening: a 3D foil booster pack you cut open by click-dragging along its cut line (and can grab to turn it around), then a one-by-one card reveal
 - [x] Binder collection view with completion %
@@ -67,8 +67,9 @@ it starts it's hidden everywhere. After it ends, the album shows as closed ("Eve
 with a sparkle marking them event-exclusive. `openPack` checks the window with the server's clock; the browser's countdown
 is only a display.
 
-To run a new event, add an era with a new code and an `event` window (drawn art for MOONFLARE, photos for a real group, as
-for any era). Starlight Encore (`SE`, 20 Oct to 9 Nov 2026 KST) is the sample event. Retiring an event needs no change: it
+To run a new event, add an era with a new code, an `event` window and its photos, as for any era. No event is scheduled
+right now (the old sample, MOONFLARE's Starlight Encore, went with that group), so the banner and Encore badge stay hidden
+until one is added. Retiring an event needs no change: it
 closes when its window ends. Don't delete or rename an event era once anyone owns its cards, since its card ids are save keys.
 
 ### Trading
@@ -133,7 +134,7 @@ of past pity streaks, which the save doesn't keep).
 Moonflare is a private site for two people, so real groups use real photos. Each card hotlinks an
 official concept photo from the [K-pop Fandom wiki](https://kpop.fandom.com), cropped to card shape
 by the wiki's image CDN. Nothing is downloaded or committed; `lib/photos/lesserafim.js` only lists
-URLs. Every real-group era has the same 21-card layout as MOONFLARE: per member an album PC, selfie PC,
+URLs. Every era has the same 21-card layout: per member an album PC, selfie PC,
 POB and lucky draw (four different photos from that era's shoot), plus one group special.
 
 To refresh the URLs or add a comeback, add the album to `ERAS` in `scripts/fetch-lesserafim.mjs` and
@@ -185,18 +186,18 @@ template with `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=reco
 - Pages: `/` is the landing page (`components/Landing.jsx`), `/groups/<slug>` is one group's albums (`components/GroupPage.jsx`), and `/collection` is the binder (`components/Collection.jsx`).
 - `components/SiteHeader.jsx` is the nav bar shown on every page: a shadcn Navigation Menu with a Groups dropdown, plus stars and the daily button. `components/GameProvider.jsx` shares the save between pages.
 - `components/OpeningStage.jsx` runs an opening: the 3D pack, the cards sliding out of it, the stack you flip and swipe through, and the spread of all five at the end.
-- `lib/pack3d.js` is the 3D booster pack (three.js, loaded only when a pack opens): a puffy foil pillow with rounded shoulders, pinch wrinkles fanning into rippled, slightly curled seals (seeded per era, so each pack crinkles its own way), and a dotted cut line. Press on the line and drag along it: the cut grows only from its own ends, so it has to be traced, and once it reaches a side the strip above it peels up, then flies off when the cut spans the pack. Pressing anywhere else on the pack grabs it to turn it around; it stays nearly in place, giving only a little toward the pointer (springs bring it back). The five pulls sit inside the pack (art facing the back, with the first card to be revealed at the back, so a peek only shows the card you would flip first), and are hidden once the DOM stack takes over. Plus foil glitter. Its wrapper art is drawn by `getPackArt()` in `lib/art.js` from the album cover (real groups) or a member lineup (MOONFLARE).
+- `lib/pack3d.js` is the 3D booster pack (three.js, loaded only when a pack opens): a puffy foil pillow with rounded shoulders, pinch wrinkles fanning into rippled, slightly curled seals (seeded per era, so each pack crinkles its own way), and a dotted cut line. Press on the line and drag along it: the cut grows only from its own ends, so it has to be traced, and once it reaches a side the strip above it peels up, then flies off when the cut spans the pack. Pressing anywhere else on the pack grabs it to turn it around; it stays nearly in place, giving only a little toward the pointer (springs bring it back). The five pulls sit inside the pack (art facing the back, with the first card to be revealed at the back, so a peek only shows the card you would flip first), and are hidden once the DOM stack takes over. Plus foil glitter. Its wrapper art is drawn by `getPackArt()` in `lib/art.js` from the album cover.
 - `lib/sound.js` makes the game's sounds with the Web Audio API. Audio starts only after a press on the opening stage, and the stage's sound switch is kept in localStorage (`lib/usePref.js`). `sparkle()` in `lib/celebrate.js` draws the stars over a revealed card in plain DOM and CSS.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview.
 - `components/InspectModal.jsx` is the large card view, with a foil picker and a "try your own photo" preview. For owned cards it also opens decorate mode (`components/ToploaderEditor.jsx`).
 - `components/Toploader.jsx` draws a card in its toploader with stickers, in plain DOM (no WebGL), for the editor and the binder. The stickers and tints are SVG drawn in code in `lib/stickers.js`; `lib/deco.js` holds the rules the server applies (owned cards only, known ids, clamped positions, at most 16 stickers and 60 toploaders), tested in `tests/deco.test.js`. Decorations live in `saves.deco` and are written by the `saveToploader` Server Action.
 - `lib/cards.js` is the card catalog (groups, eras, cards) and the foil each rarity gets.
 - `lib/photos/lesserafim.js` lists LE SSERAFIM photo URLs. It's generated by `scripts/fetch-lesserafim.mjs`.
-- `tests/cards.test.js` checks the catalog: unique ids, 21 cards per era, a photo for every real-group card.
+- `tests/cards.test.js` checks the catalog: unique ids, 21 cards per era, a photo for every card, and that MOONFLARE's retired codes stay unused.
 - `lib/gacha.js` holds pull rates, pity, the bias boost (`BIAS_BOOST`, `memberRates()`) and pack rolling. Duplicate refunds are in `RARITY` in `lib/cards.js`: 5 / 10 / 20 / 40 / 100 ★ from Common to Mythic, so an album of all duplicates returns about half its cost.
 - `tests/gacha.test.js` covers the odds, pity and economy. Run it with `npm test`.
 - `lib/events.js` has the comeback-event helpers (`eventPhase`, `canOpenEra`, countdown text), tested in `tests/events.test.js`. `components/EventBanner.jsx` is the banner and countdown badge; `lib/useNow.js` ticks the clock for them.
-- `lib/art.js` draws MOONFLARE's card art on canvas, and returns the photo URL for real groups' cards and covers.
+- `lib/art.js` returns the photo URLs for cards and covers, and draws card backs and pack wrappers on canvas.
 - `lib/useGame.js` holds the game state on the client. It starts from the save the `(game)` layout reads on the server, and every change goes through a Server Action in `app/actions/game.js` (open an album, claim the daily stars, reset, import a browser's old save), which runs `lib/gacha.js` on the server and writes the save with optimistic locking (`version`). `lib/save.js` has the pure helpers (row mapping, dates in a time zone, cleaning an imported save), tested in `tests/save.test.js`.
 - `supabase/migrations/` is the database schema. Players can only `select` their own `profiles` and `saves` rows; all writes use the secret key in `lib/supabase/admin.js`. The trade tables (`trade_listings`, `trade_offers`) have no client grants at all: the board is read on the server.
 - `/trade` is `components/TradeBoard.jsx` (tabs for the board, your listings, your offers and history), with `ListCardDialog.jsx`, `MakeOfferDialog.jsx` and `TradeCardThumb.jsx` (the face-down rule). `lib/trade.js` has the criteria and matching rules, tested in `tests/trade.test.js`; `lib/supabase/trades.js` reads the board; `app/actions/trade.js` holds the actions.

@@ -14,9 +14,9 @@ test('every era has 21 cards covering every rarity', () => {
   }
 });
 
-// A real group's era without photos would silently fall back to drawn art of the wrong members.
-test('every card from a real group has its own photo, and its era a cover', () => {
-  for (const era of ERAS.filter(e => e.group.photos)) {
+// Every card is a photo now; there's no drawn art to fall back to.
+test('every card has its own photo, and its era a cover', () => {
+  for (const era of ERAS) {
     assert.match(era.cover, /^https:\/\//, `${era.name} cover`);
     const photos = CARDS.filter(c => c.era === era).map(c => c.photo);
     assert.ok(photos.every(p => /^https:\/\//.test(p)), `${era.name} is missing photos`);
@@ -24,9 +24,11 @@ test('every card from a real group has its own photo, and its era a cover', () =
   }
 });
 
-test('MOONFLARE cards keep drawn art', () => {
-  const moonflare = GROUPS.find(g => g.code === 'MF');
-  assert.ok(CARDS.filter(c => c.era.group === moonflare).every(c => !c.photo));
+// MOONFLARE, the made-up group, was removed; its codes may still sit in old browser saves.
+test('retired MOONFLARE codes stay unused', () => {
+  assert.ok(!GROUPS.some(g => g.code === 'MF'));
+  assert.ok(!ERAS.some(e => ['PM', 'NB', 'SE'].includes(e.code)));
+  assert.ok(!GROUPS.some(g => g.members.some(m => ['HN', 'YR', 'SJ', 'MR', 'DW'].includes(m.code))));
 });
 
 test('era codes are unique', () => {

@@ -39,8 +39,8 @@ test('sanitizeWant rejects anything outside the catalog', () => {
     'epic',
     { group: 'XX' },
     { eras: ['ZZ'] },
-    { group: 'MF', eras: ['FL'] }, // FEARLESS is LE SSERAFIM's
-    { group: 'LS', members: ['HN'] }, // Haneul is MOONFLARE's
+    { group: 'MF', eras: ['FL'] }, // MOONFLARE was removed
+    { group: 'LS', members: ['HN'] }, // Haneul was MOONFLARE's
     { members: ['NOPE'] },
     { rarities: ['ultra'] },
     { foils: ['chrome'] },
@@ -76,7 +76,7 @@ test('matchesWant checks every criterion', () => {
 });
 
 test('offerOptions lists matching cards the player has, spares first', () => {
-  const owned = { 'EZ-KZ-pob': 1, 'EZ-KZ-album': 3, 'EZ-CW-pob': 2, 'PM-HN-pob': 5 };
+  const owned = { 'EZ-KZ-pob': 1, 'EZ-KZ-album': 3, 'EZ-CW-pob': 2, 'PM-HN-pob': 5 } // PM-HN-pob is a retired id;
   const options = offerOptions(owned, want({ group: 'LS' }));
   assert.deepEqual(
     options.map(o => [o.card.id, o.copies]),

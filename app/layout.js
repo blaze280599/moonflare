@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata = {
   title: { default: 'Moonflare Photocard Club', template: '%s · Moonflare' },
-  description: 'Open MOONFLARE albums, flip holo photocards, and fill your binder.'
+  description: 'Open K-pop albums, flip holo photocards, and fill your binder.'
 };
 
 export const viewport = {
