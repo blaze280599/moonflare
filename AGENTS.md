@@ -33,6 +33,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 - **Next.js 15 (App Router), React 19, plain JavaScript** (`.js`/`.jsx`, no TypeScript). Keep it JavaScript unless the README says otherwise.
 - **Tailwind CSS v4** and **shadcn/ui** (Radix, "nova" preset) for all app chrome. Icons come from `lucide-react`. Toasts use `sonner`.
 - **HoloCard** (React Bits, WebGL2) for every card that shows foil.
+- **three.js** (pinned) for the 3D booster pack in `lib/pack3d.js` only. It is imported dynamically from `OpeningStage`, so it stays out of every page bundle until a pack opens.
 - **Real-group photos** are hotlinked from the K-pop Fandom wiki's CDN (see README, "Real groups"). The site is private, for two people; don't deploy it publicly with these photos.
 - **Persistence:** `localStorage` only, through `lib/useGame.js`. Accounts and trading (Supabase) are planned but not built.
 
@@ -52,7 +53,8 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/GroupPage.jsx` | A group's album grid, pity/odds sidebar, and the opening stage; owns the Escape handling |
 | `components/PackInfo.jsx` | Pity progress and the pull-rate table, built from `RATES` |
 | `components/Collection.jsx` | Per-album progress tiles, the Binder and Reset collection |
-| `components/OpeningStage.jsx` | Full-screen album opening: rip the shrink-wrap, flip 5 cards |
+| `components/OpeningStage.jsx` | Full-screen album opening: tear the 3D pack, cards slide out into a stack, flip and swipe each one, then a spread of all five |
+| `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, drag-to-tear, springs, the flying strip and glitter |
 | `components/InspectModal.jsx` | Card detail dialog: foil picker, flip, try-your-own-photo |
 | `components/Binder.jsx` | Collection grid with an era picker |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
@@ -63,7 +65,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
 | `lib/useGame.js` | Game state hook and localStorage save |
 | `tests/` | Unit tests for game logic (`npm test`) |
-| `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, photo cropping |
+| `lib/art.js` | MOONFLARE card art drawn on canvas, real-group photo URLs, album covers, card backs, booster pack wrappers (`getPackArt`, `PACK`), photo cropping |
 | `lib/celebrate.js` | Flash and confetti for Legendary and Mythic pulls |
 | `lib/rarity-styles.js` | Tailwind class maps per rarity |
 | `prototype/` | The original single-file HTML prototype. Reference only; don't develop it further |
@@ -72,7 +74,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 
 - **Match the surrounding code:** 2-space indent, single quotes in app code (shadcn files use double quotes; leave them as generated), and comments only where the reason isn't obvious.
 - **Styling:** use Tailwind utilities and shadcn components. Use theme tokens (`bg-primary`, `text-muted-foreground`, `bg-rarity-epic`) and never hard-code colors in components. The only exceptions are the opening stage and card art, which are always dark.
-- **Use a shadcn component for every piece of app UI.** Don't hand-roll a bordered div, pill or link row when a component fits: `Card` for tiles, `Item` for list rows with media, `Badge` for chips and labels, `Skeleton` for loading placeholders, `Breadcrumb` at the top of inner pages, `Button` (including `variant="link"` / `"ghost"` with `asChild` around a Next `Link`) for links that should look like controls. Hand-written markup is only for card art, the binder's card sleeves and the opening stage's rip-and-flip visuals.
+- **Use a shadcn component for every piece of app UI.** Don't hand-roll a bordered div, pill or link row when a component fits: `Card` for tiles, `Item` for list rows with media, `Badge` for chips and labels, `Skeleton` for loading placeholders, `Breadcrumb` at the top of inner pages, `Button` (including `variant="link"` / `"ghost"` with `asChild` around a Next `Link`) for links that should look like controls. Hand-written markup is only for card art, the binder's card sleeves and the opening stage's pack, card stack and flip visuals.
 - **Tailwind class names must appear whole in the source.** Don't build them from strings (`'bg-rarity-' + r`). Add them to a map like `lib/rarity-styles.js` instead.
 - **New shadcn components:** `npx shadcn@latest add <name>`. Check `components.json` and don't change the preset or the `cn` import.
 - **Copy:** plain, specific UI text from the player's side ("Open · 100 ★", "Erase collection"). K-pop terms like PC, POB, bias and lucky draw are fine; that's the audience's language.
@@ -82,7 +84,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 
 These have all bitten us before. Read them before touching the related code.
 
-- **WebGL context limit.** Each mounted `HoloCard` holds one WebGL2 context, and browsers allow about 16 before dropping the oldest. Only mount HoloCards where foil matters: the hero card, the 5 cards on the opening stage and the card dialog. The binder uses plain `<img>` thumbnails on purpose. Never render a HoloCard per binder slot.
+- **WebGL context limit.** Each mounted `HoloCard` holds one WebGL2 context, and browsers allow about 16 before dropping the oldest. Only mount HoloCards where foil matters: the hero card, the card dialog, and on the opening stage the top card of the stack (plus one still flying away) and the 5 cards in the final spread. Cards lower in the stack are plain `<img>` backs. The 3D pack holds one more context and `PackScene.dispose()` releases it (`forceContextLoss`) once the cards are out. The binder uses plain `<img>` thumbnails on purpose. Never render a HoloCard per binder slot.
 - **React strict mode is off** (`next.config.mjs`). HoloCard calls `loseContext()` on unmount, and strict mode's double mount in dev would leave the canvas blank. Don't turn it back on unless HoloCard changes.
 - **HoloCard has local changes**, each marked with a comment: a controlled `flipped` prop, an `onClick` prop, starting face-down without animating, and `loseContext()` on unmount. If you update it from React Bits, re-apply all four.
 - **HoloCard's `width` prop sets `--hc-w` inline**, which beats CSS. Set responsive widths by passing `style={{ '--hc-w': 'clamp(...)' }}`.
@@ -93,6 +95,9 @@ These have all bitten us before. Read them before touching the related code.
 - **Tailwind source scanning:** `globals.css` uses `@import "tailwindcss" source("..")`. Without it, Tailwind scans the dev server's working folder, which may not be the project, and most utilities disappear.
 - **Stale CSS after config changes:** if styles look wrong after changing PostCSS or Tailwind config, stop the dev server, delete `.next/` and restart.
 - **Don't build while the dev server runs.** Both use `.next/`, and `npm run build` then fails with `Invariant: no direct app page entry found for /_not-found`. Stop the dev server, delete `.next/`, and build again.
+- **The pack and the cards are two layers.** The pack is a transparent WebGL canvas *above* the DOM card stack, and its world units are CSS pixels centered on the stage area. That's how the cards appear to slide out of the opening: they rise from behind the opaque pack body. `measure()` in `OpeningStage.jsx` and the mesh both work from `PACK` in `lib/art.js` (width, seals, tear line), so change those numbers in one place only, and recheck the emerge by pausing it mid-way.
+- **Fast Refresh and the pack.** Editing `lib/pack3d.js` triggers a full page reload, and editing `OpeningStage.jsx` re-runs its effects, which disposes the scene and leaves a blank canvas. Reopen the pack after either; it isn't a bug in the game.
+- **The in-app browser pane throttles animation when hidden.** requestAnimationFrame barely runs while the preview pane is hidden, so the pack can look frozen mid-swing in screenshots. Take another screenshot (it wakes the page) before assuming it's broken.
 - **Stacking order:** the opening stage is `z-40`, and shadcn dialogs and their overlays are `z-50`, so the card dialog opens on top of the stage. Keep it that way.
 - **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-lesserafim.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
 - **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are stored in players' localStorage, so never rename an era or member code. Add new ones instead.
@@ -108,8 +113,8 @@ Do all of these before committing. Nobody else will.
 1. `npm run build` and `npm test` pass with no errors.
 2. Start the dev server and open http://localhost:3000. Check the browser console for errors.
 3. Click through the flows your change touches. For anything game-related, do a full loop:
-   - Open an album, tap the cover 3 times, and confirm the cards deal face-down with no front showing.
-   - Reveal the cards one by one and with **Reveal all**, and check the captions, NEW and duplicate-refund labels.
+   - Open an album, drag across the top of the pack to tear it (and try **Rip it for me** with the keyboard), and confirm the strip flies off, the cards slide out face-down and the pack drops away.
+   - Flip each card, swipe it away, and check the captions, NEW and duplicate-refund labels. Try **Show all** too, and check the rarest card comes last.
    - Open a revealed card in the dialog, switch foils, flip it, then press Escape. The dialog should close and the stage should stay open.
    - Close the stage, or use **Go to binder**, which should land on `/collection` showing that album. Check the binder updated and open a binder card.
    - Click every nav link (desktop and the phone-width menu) and check the active link is highlighted.
@@ -133,4 +138,4 @@ The README's Direction section lists planned features. Notes for the likely next
 - **Real accounts and trading** → Supabase (auth, inventories, trades), deployed on Vercel. Swap `lib/useGame.js` for a server-backed hook with the same return shape, so components don't change. Rolls must happen server-side once inventories are shared, or players can cheat.
 - **Pick your bias** → a pull-rate boost in `rollPack()`, with the UI table showing the adjusted rates.
 - **Real card art** → return image URLs from `getArt()` in `lib/art.js`.
-- **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`.
+- **Sound and lightstick mode** → only start audio from a user gesture, and respect `prefers-reduced-motion`. A rip sound fits in `PackScene.advance()`, scaled by how fast the player drags.
