@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test",
-    "photos:lesserafim": "node scripts/fetch-lesserafim.mjs"
+    "photos": "node scripts/fetch-photos.mjs",
+    "photos:check": "node scripts/fetch-photos.mjs --check"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

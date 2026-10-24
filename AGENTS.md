@@ -22,6 +22,8 @@ npm run dev        # dev server on http://localhost:3000
 npm run build      # production build; must pass before every commit
 npm start          # serve the production build
 npm test           # unit tests (Node's built-in runner, tests/*.test.js)
+npm run photos -- <group>   # rebuild lib/photos/<group>.js from scripts/groups/<group>.js
+npm run photos:check        # check every listed photo still exists on the wiki
 ```
 
 There is no linter script. `npm run build` type-checks and lints, and `npm test` covers `lib/gacha.js` (rates, pity, refunds, and an economy check that an all-duplicate album refunds well under its cost). Both must pass before every commit. Add tests when you add logic that can break silently. Tests use `node:test` with no extra dependencies, so `package.json` has `"type": "module"`, and any `lib/` file a test imports must use explicit `.js` extensions in its relative imports (Node won't resolve `./cards`).
@@ -85,7 +87,8 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/ui/` | shadcn components. Add new ones with the CLI rather than hand-writing them |
 | `lib/cards.js` | Card catalog (groups, members, eras, variants), rarity table, `foilFor()` |
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
-| `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
+| `scripts/fetch-photos.mjs` | Rebuilds `lib/photos/<group>.js` from the K-pop Fandom wiki API (`npm run photos -- <group>`); `npm run photos:check` finds deleted or renamed photos |
+| `scripts/groups/` | One photo config per real group: gallery pages, album pages, covers, hand-picked overrides |
 | `lib/stickers.js` | Built-in sticker set (SVG in code, as data URLs) and toploader tints |
 | `lib/deco.js` | Toploader rules: `sanitizeToploader`, `applyToploader` (owned cards only, caps, clamps), `toploaderFor` |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
@@ -134,9 +137,10 @@ These have all bitten us before. Read them before touching the related code.
 - **Fast Refresh and the pack.** Editing `lib/pack3d.js` triggers a full page reload, and editing `OpeningStage.jsx` re-runs its effects, which disposes the scene and leaves a blank canvas. Reopen the pack after either; it isn't a bug in the game.
 - **The in-app browser pane throttles animation when hidden.** requestAnimationFrame barely runs while the preview pane is hidden, so the pack can look frozen mid-swing in screenshots. Take another screenshot (it wakes the page) before assuming it's broken.
 - **Stacking order:** the opening stage is `z-40`, and shadcn dialogs and their overlays are `z-50`, so the card dialog opens on top of the stage. Keep it that way.
-- **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-lesserafim.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
+- **Real-group photos are hotlinked, never downloaded.** The wiki's image CDN (`static.wikia.nocookie.net`) serves real browsers with CORS, so HoloCard can use the photos as WebGL textures. It shows a Cloudflare bot check to scripts, so `fetch-photos.mjs` reads only the MediaWiki API and builds URLs. Don't spoof a browser user agent to get around that check. Don't commit the images either: the repo is public. The `/smart/width/630/height/880` URL suffix is the CDN's own card-shaped crop.
 - **Era and member codes are save keys.** Card ids (`FL-KZ-pob`) are keys in `saves.owned` (and in old localStorage saves), so never rename an era or member code. Add new ones instead. MOONFLARE (the made-up group, removed in Oct 2026) left retired codes behind (`MF`, its members, `PM`/`NB`/`SE`): never reuse them. The database was cleaned (`supabase/migrations/20261024170000_remove_moonflare.sql`), but old browser saves can still hold its ids, and code that looks a stored id up in `CARD_BY_ID` should skip unknown ids anyway, as `profile.js` (`known`) and the trade history in `lib/supabase/trades.js` do.
-- **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. Re-run `npm run photos:lesserafim`; `tests/cards.test.js` only checks that URLs exist, not that they load.
+- **If a photo stops loading** (the wiki renamed or deleted a file), that card shows blank. `npm run photos:check` finds those files through the API (it can't load the images themselves, the CDN blocks scripts); re-run `npm run photos -- <group>` to pick replacements, or pin one with `overrides` in the group's config. `tests/cards.test.js` only checks that URLs exist, not that they load.
+- **Wiki captions vary between groups.** `fetch-photos.mjs` sorts gallery photos by the album page their caption links to, written as `''[[Page|…]]''`, `"[[Page|…]]"` or a bare link. If an era comes up short for a new group, look at the gallery's wikitext for another caption style before lowering `PER_MEMBER`. Re-running it for an existing group changes no picks unless the wiki changed, so diff `lib/photos/` before committing.
 - **One provider, many pages.** Game state lives in `GameProvider` (mounted in `app/(game)/layout.js`), so it survives client-side navigation. Read it with `useGameContext()`; never call `useGame()` in a page, or that page gets its own copy of the save and the two drift apart. The card dialog is rendered by the provider, so any page can open it with `inspect(card)`.
 - **Group URLs use `slug`, not `code`.** `GROUPS[].slug` is the `/groups/<slug>` path. A new group needs a slug and a blurb; its page, nav link, footer link and landing card appear automatically. The nav lists groups in the NavigationMenu's Groups dropdown and under a Groups heading in the phone Sheet.
 - **Every page is private by default.** The middleware lets signed-out visitors reach only `/login`, `/signup`, `/forgot-password` and `/auth/*` (`PUBLIC` in `lib/supabase/middleware.js`). A new page is gated automatically; add it to `PUBLIC` only on purpose. If the Supabase env vars are missing, nobody gets in (fail closed).
@@ -191,4 +195,4 @@ If you can't verify something (no browser available, say), state that in the com
 
 The README's Direction section lists planned features. Notes for the likely next ones:
 
-- **Another real group** → a photo script like `scripts/fetch-lesserafim.mjs`, members and eras in `lib/cards.js`. Every card needs a photo (`tests/cards.test.js`).
+- **Another real group** → a config in `scripts/groups/` (copy `lesserafim.js`), `npm run photos -- <group>`, members and eras in `lib/cards.js`. Every card needs a photo (`tests/cards.test.js`).
