@@ -34,10 +34,11 @@ test('dateInZone treats a missing or bad zone as UTC', () => {
 });
 
 test('rows and game state convert both ways', () => {
-  const state = { coins: 340, owned: { 'PM-HN-album': 2 }, packs: 3, pity: 2, lastDaily: '2026-10-24' };
+  const state = { coins: 340, owned: { 'PM-HN-album': 2 }, packs: 3, pity: 2, lastDaily: '2026-10-24', bias: { LS: 'KZ' } };
   assert.deepEqual(rowToState(stateToRow(state)), state);
   assert.equal(stateToRow(NEW_GAME).last_daily, null);
   assert.equal(rowToState({ coins: 500, owned: {}, packs: 0, pity: 0, last_daily: null }).lastDaily, '');
+  assert.deepEqual(rowToState({ coins: 500, owned: {}, packs: 0, pity: 0, last_daily: null }).bias, {});
 });
 
 test('sanitizeImport keeps only real cards with sane counts', () => {
@@ -77,4 +78,9 @@ test('mergeImport adds cards and takes the higher star count', () => {
 test('reset keeps the daily claim so it cannot be claimed twice', () => {
   const s = resetState({ coins: 5, owned: { a: 1 }, packs: 9, pity: 4, lastDaily: '2026-10-24' });
   assert.deepEqual(s, { ...NEW_GAME, lastDaily: '2026-10-24' });
+});
+
+test('reset keeps the picked biases', () => {
+  const s = resetState({ coins: 5, owned: { a: 1 }, packs: 9, pity: 4, lastDaily: '', bias: { LS: 'KZ' } });
+  assert.deepEqual(s, { ...NEW_GAME, bias: { LS: 'KZ' } });
 });
