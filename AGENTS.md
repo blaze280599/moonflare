@@ -52,7 +52,7 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `app/auth/confirm/route.js` | Where the confirmation and password reset emails' links land; starts the session, then goes to `next` |
 | `middleware.js` | Refreshes the Supabase session and redirects signed-out visitors to `/login?next=…` (`lib/supabase/middleware.js`) |
 | `lib/supabase/` | `config.js` (env vars), `server.js` (`createClient`, `getPlayer`, `getGame`), `admin.js` (secret-key client, server-only), `middleware.js`, `safe-next.js` |
-| `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
+| `app/actions/game.js` | Server Actions that change a save: `openPack`, `claimDaily`, `reset`, `saveToploader`, `importLocalSave`, `skipLocalImport`, `setTimeZone` |
 | `supabase/migrations/` | Database schema: `profiles`, `saves`, RLS, the new-user trigger. Apply new migrations through the Supabase MCP server or CLI, and commit the SQL |
 | `.env.example` | The env vars `.env.local` needs |
 | `app/globals.css` | Tailwind import, theme tokens (colors, fonts, rarity colors), opening-stage CSS |
@@ -67,12 +67,16 @@ On Windows, Node is installed at `C:\Program Files\nodejs`. If `node` isn't foun
 | `components/OpeningStage.jsx` | Full-screen album opening: tear the 3D pack, cards slide out into a stack, flip and swipe each one, then a spread of all five |
 | `lib/pack3d.js` | The 3D booster pack (three.js): mesh, foil materials, click-and-drag cutting along the line, grab to turn it (it barely moves), springs, the flying strip and glitter |
 | `components/InspectModal.jsx` | Card detail dialog: foil picker, flip, try-your-own-photo |
-| `components/Binder.jsx` | Collection grid with an era picker |
+| `components/Binder.jsx` | Collection grid with an era picker; decorated cards show in their toploader |
+| `components/Toploader.jsx` | A card in a toploader with its stickers (plain DOM, no WebGL) |
+| `components/ToploaderEditor.jsx` | Decorate mode inside the card dialog: add, drag, resize/turn (round handle), tint, save |
 | `components/HoloCard/` | React Bits HoloCard with local changes (see below) |
 | `components/ui/` | shadcn components. Add new ones with the CLI rather than hand-writing them |
 | `lib/cards.js` | Card catalog (groups, members, eras, variants), rarity table, `foilFor()` |
 | `lib/photos/` | Generated photo URL lists for real groups. Don't edit by hand |
 | `scripts/fetch-lesserafim.mjs` | Rebuilds `lib/photos/lesserafim.js` from the K-pop Fandom wiki API (`npm run photos:lesserafim`) |
+| `lib/stickers.js` | Built-in sticker set (SVG in code, as data URLs) and toploader tints |
+| `lib/deco.js` | Toploader rules: `sanitizeToploader`, `applyToploader` (owned cards only, caps, clamps), `toploaderFor` |
 | `lib/gacha.js` | Pack rolling, pull rates, pity, refunds, constants |
 | `lib/useGame.js` | Client game state: starts from the server's save, calls the Server Actions, adopts the state they return |
 | `lib/save.js` | Pure save helpers: row ↔ state, `dateInZone`, `isTimeZone`, `sanitizeImport`, `mergeImport`, `resetState` |
@@ -125,6 +129,8 @@ These have all bitten us before. Read them before touching the related code.
 - **Password reset.** `/forgot-password` is public and guest-only; it always shows the same "if that email has an account" screen, so it can't be used to find players (Supabase also answers unknown emails with a success). The emailed link goes to `/auth/confirm?next=/reset-password`, which signs the player in. `/reset-password` is deliberately *not* in `PUBLIC`: it needs that session, and the account menu's Change password uses the same page. A dead link goes back to `/forgot-password?error=link`. The `?next=` in the link only survives if the Supabase redirect allowlist matches it (`…/auth/confirm**`, see README "Run it"); otherwise Supabase quietly sends the player to the bare Site URL. Don't test by spamming reset emails: the built-in mailer sends only a few an hour.
 - **Redirect targets go through `safeNext()`**, so `?next=//evil.com` can't send a player off-site. Keep using it for any redirect built from user input.
 - **Old browser saves import once per account.** `saves.local_import_at` records the answer (import or start fresh). The server re-cleans the localStorage data (`sanitizeImport`: known card ids only, capped counts and stars), and the browser clears `moonflare-save-v1` only after an import, so a second account on the same browser can still claim it.
+- **Toploader decorations** live in `saves.deco` (card id → `{ t: tint, s: [{ id, x, y, k, r }] }`, positions as fractions of the toploader). Sticker and tint ids are save keys like era codes: never rename or remove one in `lib/stickers.js`, add new ones. The server re-cleans everything through `applyToploader`; a plain clear toploader removes the entry. Decorations on a card the player no longer owns stay stored but are hidden (`toploaderFor`), and Reset clears them (`NEW_GAME.deco`). Decorate mode replaces the dialog's HoloCard rather than adding a canvas, and the binder draws toploaders with `<img>` only.
+- **Dragging stickers:** the editor uses pointer events with `setPointerCapture` and `touch-action: none` on the stage, so mouse and touch share one path. Stickers render in a fixed (uid) order and stack by z-index: reordering DOM nodes mid-drag drops pointer capture. `pointerdown` calls `preventDefault`, so the sticker is focused by hand to keep keyboard controls working after a click.
 - **Escape key:** `GroupPage.jsx` listens for Escape in the capture phase on `window`, so Escape closes the card dialog without also closing the stage underneath. Keep the capture listener if you change this.
 
 ## Verifying a change
